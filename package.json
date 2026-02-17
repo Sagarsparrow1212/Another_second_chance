@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "install-all": "npm install && npm install --prefix api",
+    "start": "npm run build && npm start --prefix api"
   },
   "dependencies": {
     "@heroicons/react": "2.0.18",
