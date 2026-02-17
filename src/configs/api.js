@@ -35,7 +35,7 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 // API URL with version 1
-export const API_BASE_URL_V1 = `${API_BASE_URL}/api/v1`;
+export const API_BASE_URL_V1 = `/api/v1`;
 
 // Helper function to get full file URL
 export const getFileUrl = (filePath) => {
