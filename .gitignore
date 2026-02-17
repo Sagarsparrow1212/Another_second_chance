@@ -1,0 +1,45 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+api/node_modules/
+
+# Build output
+dist/
+dist-ssr/
+api/dist/
+api/build/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+.env.development.local
+.env.production.local
+.env.test.local
+
+# Editor folders
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+api/config/*.json
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Temporary files
+api/tmp/

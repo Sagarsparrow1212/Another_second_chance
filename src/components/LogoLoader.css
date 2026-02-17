@@ -1,0 +1,304 @@
+/* ========================================
+   LOGO LOADER - Premium Animated Loader
+   ======================================== */
+
+/* Container - Full screen overlay */
+.logo-loader-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 9999;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Wrapper */
+.logo-loader-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+/* Size variants */
+.logo-loader-small {
+    width: 120px;
+}
+
+.logo-loader-medium {
+    width: 200px;
+}
+
+.logo-loader-large {
+    width: 280px;
+}
+
+/* Logo mask container */
+.logo-loader-mask {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.3));
+}
+
+/* Background logo (grayscale) */
+.logo-loader-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: grayscale(100%) brightness(1.5) opacity(0.3);
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Fill container - animates from bottom to top */
+.logo-loader-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    overflow: hidden;
+    animation: fillUp 2.5s ease-in-out infinite;
+}
+
+/* Colored logo inside fill */
+.logo-loader-colored {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    filter: brightness(1.1) saturate(1.2);
+}
+
+/* Wave effect */
+.logo-loader-wave {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    overflow: hidden;
+}
+
+.logo-loader-wave svg {
+    width: 100%;
+    height: 100%;
+}
+
+.wave-path {
+    fill: rgba(255, 255, 255, 0.2);
+    animation: waveMove 1.5s ease-in-out infinite;
+}
+
+/* Glow effect */
+.logo-loader-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120%;
+    height: 120%;
+    background: radial-gradient(circle,
+            rgba(255, 255, 255, 0.3) 0%,
+            transparent 70%);
+    animation: pulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Loading text */
+.logo-loader-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.loading-message {
+    animation: fadeInOut 2s ease-in-out infinite;
+}
+
+.loading-dots {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.loading-dots .dot {
+    animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.loading-dots .dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-dots .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+/* Fill up animation */
+@keyframes fillUp {
+    0% {
+        height: 0%;
+    }
+
+    50% {
+        height: 100%;
+    }
+
+    100% {
+        height: 0%;
+    }
+}
+
+/* Wave movement */
+@keyframes waveMove {
+    0% {
+        transform: translateX(0) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-25%) translateY(-5px);
+    }
+
+    100% {
+        transform: translateX(0) translateY(0);
+    }
+}
+
+/* Pulse glow */
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+/* Fade in container */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Fade in/out text */
+@keyframes fadeInOut {
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Dot bounce */
+@keyframes dotBounce {
+
+    0%,
+    80%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+
+    40% {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .logo-loader-small {
+        width: 100px;
+    }
+
+    .logo-loader-medium {
+        width: 150px;
+    }
+
+    .logo-loader-large {
+        width: 200px;
+    }
+
+    .logo-loader-text {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-loader-small {
+        width: 80px;
+    }
+
+    .logo-loader-medium {
+        width: 120px;
+    }
+
+    .logo-loader-large {
+        width: 160px;
+    }
+
+    .logo-loader-text {
+        font-size: 0.875rem;
+    }
+}
+
+/* ========================================
+   ALTERNATIVE THEMES (Optional)
+   ======================================== */
+
+/* Light theme variant */
+.logo-loader-container.light-theme {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.logo-loader-container.light-theme .logo-loader-text {
+    color: #2d3748;
+}
+
+/* Dark theme variant */
+.logo-loader-container.dark-theme {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+/* Brand theme variant */
+.logo-loader-container.brand-theme {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
