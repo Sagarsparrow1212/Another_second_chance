@@ -9,6 +9,8 @@ const Donation = require('../models/Donation');
 const Donor = require('../models/Donor');
 const Homeless = require('../models/Homeless');
 const Organization = require('../models/Organization');
+const User = require('../models/User');
+const NotificationService = require('../services/notificationService');
 const { creditWallet } = require('../services/walletService');
 
 /**
@@ -255,7 +257,8 @@ const handlePaymentSuccess = async (req, res) => {
     // Calculate split
     let organizationAmount = 0;
     let homelessAmount = netAmount;
-
+    // Amount received
+    console.log('--- Amount received ---');
     if (homeless.organizationCutPercentage && homeless.organizationCutPercentage > 0) {
       // Calculate organization cut from NET amount
       const cutPercentage = homeless.organizationCutPercentage;
@@ -264,7 +267,7 @@ const handlePaymentSuccess = async (req, res) => {
     }
 
     const currency = paymentIntent.currency.toUpperCase();
-
+    console.log('--- Donation Created ---');
     const donation = await Donation.create({
       donationId: `DON-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
       donorId: donor._id,
@@ -291,7 +294,10 @@ const handlePaymentSuccess = async (req, res) => {
     // 5. Update Donor's total donations
     await donor.updateOne({ $inc: { totalDonations: amount } });
 
+    // oragaization wallet
+    console.log('--- oragaization wallet ---');
     // 6. Credit Organization Wallet
+
     if (organizationAmount > 0) {
       await creditWallet(
         homeless.organizationId,
@@ -300,6 +306,81 @@ const handlePaymentSuccess = async (req, res) => {
         'Donation',
         `Commission from donation ${donation.donationId}`
       );
+    }
+  //  console.log('--- Notification Process Started ---');
+    // 7. Send Notifications
+    try {
+      console.log('--- Starting Notification Process ---');
+      console.log(`Homeless ID: ${homeless._id}, User ID: ${homeless.userId}`);
+      console.log(`Organization ID: ${homeless.organizationId}`);
+
+      // Notify Homeless User
+      const homelessUser = await User.findById(homeless.userId);
+      console.log(`Homeless User found: ${!!homelessUser}`);
+      if (homelessUser) {
+        console.log(`Homeless FCM Tokens: ${homelessUser.fcmTokens ? homelessUser.fcmTokens.length : 0}`);
+      }
+
+      if (homelessUser && homelessUser.fcmTokens && homelessUser.fcmTokens.length > 0) {
+        console.log('Sending notification to Homeless User...');
+        const response = await NotificationService.sendToMulticast(
+          homelessUser.fcmTokens,
+          'New Donation Received! 🎉',
+          `You received a donation of ${currency} ${homelessAmount}!`,
+          {
+            type: 'donation',
+            donationId: donation._id.toString(),
+            amount: homelessAmount.toString(),
+            currency: currency
+          },
+          homelessUser._id
+        );
+        console.log('Homeless notification response:', response);
+      } else {
+        console.log('Skipping Homeless notification: No tokens or user not found');
+      }
+
+      // Notify Organization User
+      console.log(`Organization Amount: ${organizationAmount}`);
+      if (organizationAmount > 0) {
+        const organization = await Organization.findById(homeless.organizationId);
+        console.log(`Organization found: ${!!organization}`);
+
+        if (organization) {
+          const organizationUser = await User.findById(organization.userId);
+          console.log(`Organization User found: ${!!organizationUser}`);
+          if (organizationUser) {
+            console.log(`Organization FCM Tokens: ${organizationUser.fcmTokens ? organizationUser.fcmTokens.length : 0}`);
+          }
+
+          if (organizationUser && organizationUser.fcmTokens && organizationUser.fcmTokens.length > 0) {
+            console.log('Sending notification to Organization User...');
+            const orgResponse = await NotificationService.sendToMulticast(
+              organizationUser.fcmTokens,
+              'Commission Received',
+              `You received a commission of ${currency} ${organizationAmount} from a donation to ${homeless.fullName}.`,
+              {
+                type: 'commission',
+                donationId: donation._id.toString(),
+                amount: organizationAmount.toString(),
+                currency: currency,
+                homelessName: homeless.fullName
+              },
+              organizationUser._id
+            );
+            console.log('Organization notification response:', orgResponse);
+          } else {
+            console.log('Skipping Organization notification: No tokens or user not found');
+          }
+        }
+      } else {
+        console.log('Skipping Organization notification: No commission amount');
+      }
+      console.log('--- Notification Process Completed ---');
+
+    } catch (notifyError) {
+      console.error('Failed to send notifications:', notifyError);
+      // Don't fail the response if notification fails, just log it
     }
 
     res.status(201).json({

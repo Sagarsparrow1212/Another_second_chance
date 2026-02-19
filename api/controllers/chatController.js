@@ -671,7 +671,8 @@ const sendMessage = async (req, res) => {
                   type: 'chat_message',
                   chatId: chatId.toString(),
                   messageId: newMessage._id.toString()
-                }
+                },
+                recipientUserId // Pass userId to save notification
               );
             }
           } else {

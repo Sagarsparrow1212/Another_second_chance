@@ -100,7 +100,11 @@ const { activityLogger } = require('./middleware/activityLogger');
 // Middleware
 const { protect, authorize } = require('./middleware/auth');
 
+// Routes
+const userRoutes = require('./routes/userRoutes');
+
 // Public API Routes
+app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -145,11 +149,11 @@ const staticOptions = {
   }
 };
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
-app.use(express.static(path.join(__dirname, "../dist")));
-
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "../dist", "index.html"));
-});
+// app.use(express.static(path.join(__dirname, "../dist")));
+//
+// app.use((req, res) => {
+//   res.sendFile(path.join(__dirname, "../dist", "index.html"));
+// });
 
 app.get('/health', (req, res) => {
   res.send('Hello World - Homeless App API');
