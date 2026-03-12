@@ -19,6 +19,21 @@ import { ChevronDownIcon, ChevronUpIcon, ChevronLeftIcon, ChevronRightIcon, Magn
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL_V1, API_BASE_URL } from "@/configs/api";
+// Phone number formatting function
+const formatPhoneNumber = (value) => {
+  if (!value) return '';
+  const phoneNumber = value.replace(/\D/g, '');
+  const limitedNumber = phoneNumber.slice(0, 10);
+  if (limitedNumber.length === 0) {
+    return value;
+  } else if (limitedNumber.length <= 3) {
+    return `(${limitedNumber}`;
+  } else if (limitedNumber.length <= 6) {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+  } else {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
+  }
+};
 
 export function Organizations() {
   const navigate = useNavigate();
@@ -408,7 +423,7 @@ export function Organizations() {
         ['Name', 'Phone Number', 'Email Address', 'Status', 'Type', 'City', 'State', 'Country'],
         ...orgsToExport.map(org => [
           org.name || org.orgName,
-          org.contactPhone || '',
+          org.contactPhone ? formatPhoneNumber(org.contactPhone) : '',
           org.email || org.userEmail || '',
           org.verified ? 'Verified' : 'Pending',
           org.orgType || '',
@@ -435,7 +450,7 @@ export function Organizations() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent",  }}>
+      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent", }}>
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-2">
@@ -591,7 +606,7 @@ export function Organizations() {
                               </td>
                               <td className={className}>
                                 <Typography className="text-sm font-normal text-blue-gray-500">
-                                  {org.phone || "N/A"}
+                                  {org.phone ? formatPhoneNumber(org.phone) : "N/A"}
                                 </Typography>
                               </td>
                               <td className={className}>
@@ -807,7 +822,7 @@ export function Organizations() {
                                   Phone Number
                                 </Typography>
                                 <Typography className="text-sm font-normal text-black">
-                                  {org.phone || "N/A"}
+                                  {org.phone ? formatPhoneNumber(org.phone) : "N/A"}
                                 </Typography>
                               </div>
                             </div>

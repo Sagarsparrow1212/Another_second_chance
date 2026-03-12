@@ -118,7 +118,7 @@ const getHomelessDashboard = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    total: { $sum: { $ifNull: ['$homelessAmount', 0] } },
+                    total: { $sum: { $cond: [{ $gt: ['$homelessAmount', 0] }, '$homelessAmount', '$amount'] } },
                     count: { $sum: 1 }
                 }
             }

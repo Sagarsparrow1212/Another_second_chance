@@ -7,13 +7,13 @@ const organizationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    email: { type: String, required: true  },
+    email: { type: String, required: true },
     orgName: { type: String, required: true },
-    orgType: { 
-      type: String, 
+    orgType: {
+      type: String,
       enum: [
-        "NGO", 
-        "Private", 
+        "NGO",
+        "Private",
         "Govt",
         "nonprofit",
         "shelter",
@@ -21,8 +21,8 @@ const organizationSchema = new mongoose.Schema(
         "employment_agency",
         "merchant",
         "government"
-      ], 
-      required: true 
+      ],
+      required: true
     },
     streetAddress: { type: String, required: true },
     city: { type: String, required: true },
@@ -33,6 +33,7 @@ const organizationSchema = new mongoose.Schema(
     emergencyContactEmail: { type: String },
     contactPhone: { type: String },
     logo: { type: String }, // Optional organization logo
+    stripeAccountId: { type: String, default: null }, // Connect account ID for Stripe
     // Quick reference fields for fast UI lookups
     currentStatus: {
       type: String,

@@ -3,6 +3,12 @@ const Organization = require('../models/Organization');
 const Request = require('../models/Request');
 const generateToken = require('../services/generateToken');
 
+// Initialize Stripe with secret key from environment variables
+const Stripe = require('stripe');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16',
+});
+
 /**
  * @desc    Register a new user
  * @route   POST /api/v1/auth/register
@@ -74,6 +80,7 @@ const registerUser = async (req, res) => {
 
     // Step 5: If role is organization, create organization profile
     let organization = null;
+    let accountLinkUrl = null;
     if (role === 'organization') {
       // Extract organization-specific fields
       // IMPORTANT: email is already extracted from req.body at line 13, so it's NOT in roleSpecificData
@@ -126,6 +133,35 @@ const registerUser = async (req, res) => {
         });
       }
 
+      // Create Stripe Connect Account
+      console.log('Creating Stripe Connect account for ' + orgName);
+      let stripeAccountId = null;
+      try {
+        const account = await stripe.accounts.create({
+          type: 'standard', // Use 'standard' or 'express' based on your requirements
+          email: email.toLowerCase(),
+          country: 'US',
+          business_profile: {
+            name: orgName,
+            url: `https://homeless.vercel.app/org/${orgName.replace(/\s+/g, '-').toLowerCase()}`, // Optional: Add a default or generated URL
+          },
+        });
+        stripeAccountId = account.id;
+        console.log(`Stripe Connect account created for ${orgName}: ${stripeAccountId}`);
+
+        const accountLink = await stripe.accountLinks.create({
+          account: account.id,
+          refresh_url: 'https://api.yourapp.com/stripe/refresh',
+          return_url: 'https://api.yourapp.com/stripe/return',
+          type: 'account_onboarding',
+        });
+        accountLinkUrl = accountLink.url;
+      } catch (stripeError) {
+        console.error('Failed to create Stripe Connect account:', stripeError);
+        // We'll continue creating the organization even if Stripe fails, 
+        // they can connect later from dashboard
+      }
+      console.log('Stripe Connect account created for ' + orgName + ': ' + stripeAccountId);
       // Create organization profile
       // Use the email variable from the outer scope (extracted from req.body at line 13)
       organization = await Organization.create({
@@ -145,6 +181,7 @@ const registerUser = async (req, res) => {
         currentStatus: 'Pending',
         documents: documents,
         photos: photos,
+        stripeAccountId: stripeAccountId,
       });
 
       // Create initial request for the organization after registration
@@ -202,6 +239,9 @@ const registerUser = async (req, res) => {
         orgType: organization.orgType,
         verified: organization.verified,
       };
+      if (accountLinkUrl) {
+        responseData.organization.accountLinkUrl = accountLinkUrl;
+      }
     }
 
     // Step 8: Return success response
@@ -628,7 +668,7 @@ const { sendResetPasswordOtpEmail } = require('../services/emailService');
 const sendResetPasswordOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-
+    //   console.log(email, otp);
     if (!email || !otp) {
       return res.status(400).json({
         success: false,

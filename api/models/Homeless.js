@@ -10,17 +10,17 @@ const homelessSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Organization",
         required: true,
-    },  organizationCutPercentage: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 30, // enforce business rule
-},
+    }, organizationCutPercentage: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 30, // enforce business rule
+    },
     fullName: {
         type: String,
         required: true,
     },
-  
+
 
     age: {
         type: Number,

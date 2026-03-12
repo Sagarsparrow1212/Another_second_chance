@@ -155,6 +155,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOption
 //   res.sendFile(path.join(__dirname, "../dist", "index.html"));
 // });
 
+app.get('/', (req, res) => {
+  res.status(200).json({ success: true, message: 'Homeless App API is running' });
+});
+
 app.get('/health', (req, res) => {
   res.send('Hello World - Homeless App API');
 });

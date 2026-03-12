@@ -460,7 +460,7 @@ const getDonationsByHomeless = async (req, res) => {
     try {
 
         let { homelessId } = req.params;
-        const { page = 1, limit = 10, status, donationType } = req.query;
+        const { page = 1, limit = 50, status, donationType } = req.query;
 
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
@@ -502,9 +502,7 @@ const getDonationsByHomeless = async (req, res) => {
             query.donationType = donationType;
         }
 
-        if (donationType && ['Money', 'Food', 'Clothes', 'Services', 'Other'].includes(donationType)) {
-            query.donationType = donationType;
-        }
+
 
         const total = await Donation.countDocuments(query);
 
@@ -537,7 +535,7 @@ const getDonationsByHomeless = async (req, res) => {
                         $sum: {
                             $cond: [
                                 { $eq: ['$status', 'Completed'] },
-                                { $ifNull: ['$homelessAmount', 0] },
+                                { $cond: [{ $gt: ['$homelessAmount', 0] }, '$homelessAmount', '$amount'] },
                                 0
                             ]
                         }
@@ -916,7 +914,7 @@ const getMyDonationHistory = async (req, res) => {
         // But since we are inside a controller, it's cleaner to reuse the query logic
         // So I will just implement the query logic here specific for "me"
 
-        const { page = 1, limit = 10, status, donationType } = req.query;
+        const { page = 1, limit = 50, status, donationType } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
@@ -983,7 +981,7 @@ const getOrganizationDonationHistory = async (req, res) => {
 
         const {
             page = 1,
-            limit = 10,
+            limit = 50,
             status,
             donationType,
             startDate,

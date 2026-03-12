@@ -576,7 +576,7 @@ const getDashboardStats = async (req, res) => {
                         $sum: {
                             $cond: [
                                 { $eq: ['$donationType', 'Money'] },
-                                { $ifNull: ['$netAmount', '$amount'] },
+                                { $cond: [{ $gt: ['$netAmount', 0] }, '$netAmount', '$amount'] },
                                 0
                             ]
                         }

@@ -11,7 +11,7 @@ const Homeless = require('../models/Homeless');
 const Organization = require('../models/Organization');
 const User = require('../models/User');
 const NotificationService = require('../services/notificationService');
-const { creditWallet } = require('../services/walletService');
+const { creditWallet, debitWallet } = require('../services/walletService');
 
 /**
  * @desc    Create a payment intent
@@ -20,8 +20,26 @@ const { creditWallet } = require('../services/walletService');
  */
 const createPaymentIntent = async (req, res) => {
   try {
-    const { amount, currency = 'usd', metadata } = req.body;
+    const { amount, currency = 'usd', metadata, organization_id } = req.body;
+    console.log('organization_id', organization_id);
+    // find homeless user to organization 
+    const homeless = await Homeless.findById(organization_id);
+    console.log('homeless', homeless);
 
+    if (!homeless) {
+      return res.status(404).json({
+        success: false,
+        message: 'Homeless user not found',
+      });
+    }
+    const organization = await Organization.findById(homeless.organizationId);
+    console.log('organization', organization);
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found',
+      });
+    }
     if (!amount) {
       return res.status(400).json({
         success: false,
@@ -37,13 +55,29 @@ const createPaymentIntent = async (req, res) => {
       });
     }
 
+    // Calculate org's cut (platform keeps this; org Stripe account gets the rest)
+    const cutPercentage = homeless.organizationCutPercentage || 0;
+    const applicationFeeAmount = 0;
+
     // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntentParams = {
       amount: Math.round(amount * 100), // Convert to cents (smallest currency unit)
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
+
+      transfer_data: {
+        destination: organization.stripeAccountId, // homeless share goes to org Stripe account
+
+      },
       metadata: metadata || {},
-    });
+    };
+
+    // Only set application_fee_amount if org takes a cut
+    if (applicationFeeAmount >= 0) {
+      paymentIntentParams.application_fee_amount = applicationFeeAmount;
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
     res.status(200).json({
       success: true,
@@ -294,20 +328,24 @@ const handlePaymentSuccess = async (req, res) => {
     // 5. Update Donor's total donations
     await donor.updateOne({ $inc: { totalDonations: amount } });
 
-    // oragaization wallet
-    console.log('--- oragaization wallet ---');
-    // 6. Credit Organization Wallet
+    // 6. Credit Wallets
+    console.log('--- Crediting Wallets ---');
 
+    // Credit Organization Wallet with their cut only
     if (organizationAmount > 0) {
       await creditWallet(
         homeless.organizationId,
-        organizationAmount,
+        organizationAmount + homelessAmount,
         donation._id,
-        'Donation',
+        'Commission',
         `Commission from donation ${donation.donationId}`
       );
     }
-  //  console.log('--- Notification Process Started ---');
+
+    // Note: homelessAmount is stored in the Donation record (donation.homelessAmount).
+    // The Wallet model only supports organizations, so the homeless share is
+    // tracked via the Donation document and managed/disbursed by the organization.
+    //  console.log('--- Notification Process Started ---');
     // 7. Send Notifications
     try {
       console.log('--- Starting Notification Process ---');
@@ -397,6 +435,203 @@ const handlePaymentSuccess = async (req, res) => {
     });
   }
 };
+/**
+ * @desc    Get Stripe Account Status
+ * @route   GET /api/v1/payments/account/:accountId
+ * @access  Private
+ */
+const getAccountStatus = async (req, res) => {
+  try {
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account ID is required',
+      });
+    }
+
+    const account = await stripe.accounts.retrieve(accountId);
+
+    res.status(200).json({
+      success: true,
+      data: account,
+    });
+  } catch (error) {
+    console.error('Get account status error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to retrieve acccount status',
+    });
+  }
+};
+
+/**
+ * @desc    Get Stripe onboarding link for an organization's Connect account
+ * @route   GET /api/v1/payments/onboarding-link
+ * @access  Private - Organization role only
+ */
+const getOnboardingLink = async (req, res) => {
+  try {
+    // Find the organization linked to the authenticated user
+    const organization = await Organization.findOne({
+      userId: req.user._id,
+      isDeleted: false,
+    }).lean();
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found for this user',
+      });
+    }
+
+    if (!organization.stripeAccountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'No Stripe account found for this organization. Please register first.',
+      });
+    }
+
+    const accountLink = await stripe.accountLinks.create({
+      account: organization.stripeAccountId,
+      refresh_url: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/stripe/refresh`,
+      return_url: `${process.env.FRONTEND_URL || 'https://yourapp.com'}/stripe/return`,
+      type: 'account_onboarding',
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        url: accountLink.url,
+        stripeAccountId: organization.stripeAccountId,
+        expiresAt: accountLink.expires_at,
+      },
+      message: 'Onboarding link generated successfully',
+    });
+  } catch (error) {
+    console.error('Get onboarding link error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate onboarding link',
+    });
+  }
+};
+
+/**
+ * @desc    Withdraw funds from organization Stripe account to bank account
+ * @route   POST /api/v1/payments/withdraw
+ * @access  Private - Organization role only
+ */
+const withdrawFunds = async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid amount is required for withdrawal',
+      });
+    }
+
+    // Find the organization linked to the authenticated user
+    const organization = await Organization.findOne({
+      userId: req.user._id,
+      isDeleted: false,
+    });
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found for this user',
+      });
+    }
+
+    if (!organization.stripeAccountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe account not connected. Please complete onboarding first.',
+      });
+    }
+
+    // Create payout
+    // Note: This draws from the organization's Stripe balance
+    const payout = await stripe.payouts.create(
+      {
+        amount: Math.round(amount * 100), // convert to cents
+        currency: 'usd',
+      },
+      {
+        stripeAccount: organization.stripeAccountId, // connected account
+      }
+    );
+
+    // Record the withdrawal in the organization's wallet
+    await debitWallet(
+      organization._id,
+      amount,
+      payout.id,
+      'Payout',
+      `Withdrawal to bank account (Stripe Payout: ${payout.id})`
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        payoutId: payout.id,
+        amount: payout.amount / 100,
+        currency: payout.currency,
+        status: payout.status,
+        arrivalDate: new Date(payout.arrival_date * 1000),
+      },
+      message: 'Withdrawal initiated successfully',
+    });
+  } catch (error) {
+    console.error('Withdraw funds error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to initiate withdrawal',
+    });
+  }
+};
+
+/**
+ * @desc    Get Stripe Connect balance by account ID
+ * @route   GET /api/v1/payments/connect-balance/:accountId
+ * @access  Private
+ */
+const getConnectBalance = async (req, res) => {
+  try {
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account ID is required',
+      });
+    }
+    
+    const balance = await stripe.balance.retrieve({
+      stripeAccount: accountId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        available: balance.available[0].amount / 100,
+        pending: balance.pending[0].amount / 100,
+        currency: balance.available[0].currency,
+      },
+    });
+
+  } catch (error) {
+    console.error('Get connect balance error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to retrieve connect balance',
+    });
+  }
+};
 
 module.exports = {
   createPaymentIntent,
@@ -404,5 +639,8 @@ module.exports = {
   confirmPaymentIntent,
   cancelPaymentIntent,
   handlePaymentSuccess,
+  getAccountStatus,
+  getOnboardingLink,
+  withdrawFunds,
+  getConnectBalance,
 };
-
