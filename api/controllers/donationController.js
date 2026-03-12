@@ -2,6 +2,8 @@ const Donation = require('../models/Donation');
 const Donor = require('../models/Donor');
 const Homeless = require('../models/Homeless');
 const Organization = require('../models/Organization');
+const User = require('../models/User');
+const NotificationService = require('../services/notificationService');
 const { creditWallet } = require('../services/walletService');
 
 /**
@@ -458,7 +460,7 @@ const getDonationsByHomeless = async (req, res) => {
     try {
 
         let { homelessId } = req.params;
-        const { page = 1, limit = 10, status, donationType } = req.query;
+        const { page = 1, limit = 50, status, donationType } = req.query;
 
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
@@ -500,9 +502,7 @@ const getDonationsByHomeless = async (req, res) => {
             query.donationType = donationType;
         }
 
-        if (donationType && ['Money', 'Food', 'Clothes', 'Services', 'Other'].includes(donationType)) {
-            query.donationType = donationType;
-        }
+
 
         const total = await Donation.countDocuments(query);
 
@@ -535,7 +535,7 @@ const getDonationsByHomeless = async (req, res) => {
                         $sum: {
                             $cond: [
                                 { $eq: ['$status', 'Completed'] },
-                                { $ifNull: ['$homelessAmount', 0] },
+                                { $cond: [{ $gt: ['$homelessAmount', 0] }, '$homelessAmount', '$amount'] },
                                 0
                             ]
                         }
@@ -743,6 +743,70 @@ const updateDonation = async (req, res) => {
                         await donation.updateDonorTotal();
                     }
                 }
+
+                // --- Notification Logic ---
+                try {
+                    // Notify Homeless
+                    const homeless = await Homeless.findById(donation.homelessId);
+                    if (homeless && homeless.userId) {
+                        const homelessUser = await User.findById(homeless.userId);
+                        if (homelessUser && homelessUser.fcmTokens && homelessUser.fcmTokens.length > 0) {
+                            const amountMsg = donation.donationType === 'Money'
+                                ? `${updateData.homelessAmount || donation.amount} ${donation.currency}`
+                                : donation.donationType;
+
+                            await NotificationService.sendToMulticast(
+                                homelessUser.fcmTokens,
+                                'Donation Received! 🎉',
+                                `You have received a donation of ${amountMsg}.`,
+                                {
+                                    type: 'donation',
+                                    donationId: donation._id.toString(),
+                                    amount: (updateData.homelessAmount || donation.amount).toString(),
+                                    currency: donation.currency
+                                },
+                                homelessUser._id
+                            );
+                        }
+                    }
+
+                    // Notify Organization
+                    const organization = await Organization.findById(donation.organizationId);
+                    if (organization && organization.userId) {
+                        const orgUser = await User.findById(organization.userId);
+                        if (orgUser && orgUser.fcmTokens && orgUser.fcmTokens.length > 0) {
+                            const amountMsg = donation.donationType === 'Money'
+                                ? `${updateData.organizationAmount || 0} ${donation.currency}`
+                                : 'items';
+
+                            // Only notify if there is an amount or it's a non-money donation (though logic above implies money split)
+                            // For non-money donations, organization might not get a "cut" in the same way, but let's assume they want to know.
+                            // However, the prompt specifically asked for "individual amount display for that amount receive".
+                            // If organizationAmount is 0, maybe we shouldn't notify or notify with 0? 
+                            // Let's notify them of their commission.
+
+                            if (donation.donationType !== 'Money' || (updateData.organizationAmount > 0)) {
+                                await NotificationService.sendToMulticast(
+                                    orgUser.fcmTokens,
+                                    'Donation Commission Received',
+                                    `You have received a commission of ${amountMsg} from a donation.`,
+                                    {
+                                        type: 'donation',
+                                        donationId: donation._id.toString(),
+                                        amount: (updateData.organizationAmount || 0).toString(),
+                                        currency: donation.currency
+                                    },
+                                    orgUser._id
+                                );
+                            }
+                        }
+                    }
+
+                } catch (notifError) {
+                    console.error('Error sending donation notifications:', notifError);
+                    // Don't fail the update if notification fails
+                }
+                // --- End Notification Logic ---
             }
             if (status === 'Cancelled') {
                 updateData.cancelledAt = new Date();
@@ -850,7 +914,7 @@ const getMyDonationHistory = async (req, res) => {
         // But since we are inside a controller, it's cleaner to reuse the query logic
         // So I will just implement the query logic here specific for "me"
 
-        const { page = 1, limit = 10, status, donationType } = req.query;
+        const { page = 1, limit = 50, status, donationType } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
@@ -917,7 +981,7 @@ const getOrganizationDonationHistory = async (req, res) => {
 
         const {
             page = 1,
-            limit = 10,
+            limit = 50,
             status,
             donationType,
             startDate,

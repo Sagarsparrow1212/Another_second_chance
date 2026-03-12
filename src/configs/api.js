@@ -16,7 +16,7 @@ const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  
+
   // When accessing from another device, use the current hostname instead of localhost
   // This allows the frontend to connect to the backend when accessed via IP address
   if (typeof window !== 'undefined') {
@@ -26,7 +26,7 @@ const getApiBaseUrl = () => {
       return `http://${hostname}:5000`;
     }
   }
-  
+
   // Default to localhost for development
   return 'http://localhost:5000';
 };
@@ -35,17 +35,18 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 // API URL with version 1
-export const API_BASE_URL_V1 = `/api/v1`;
+// API URL with version 1
+export const API_BASE_URL_V1 = `${API_BASE_URL}/api/v1`;
 
 // Helper function to get full file URL
 export const getFileUrl = (filePath) => {
   if (!filePath) return null;
-  
+
   // If filePath already includes http:// or https://, return as is
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
     return filePath;
   }
-  
+
   // Otherwise, prepend the base URL
   return `${API_BASE_URL}${filePath}`;
 };

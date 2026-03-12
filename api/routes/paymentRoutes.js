@@ -7,6 +7,10 @@ const {
   confirmPaymentIntent,
   cancelPaymentIntent,
   handlePaymentSuccess,
+  getAccountStatus,
+  getOnboardingLink,
+  withdrawFunds,
+  getConnectBalance,
 } = require('../controllers/paymentController');
 
 /**
@@ -45,5 +49,32 @@ router.post('/cancel-payment-intent', protect, authorize('donor', 'organization'
 router.post('/success', protect, authorize('donor', 'organization', 'admin'), handlePaymentSuccess);
 
 
+/**
+ * @route   GET /api/v1/payments/account/:accountId
+ * @desc    Get Stripe Connect account status by ID
+ * @access  Private
+ */
+router.get('/account/:accountId', protect, getAccountStatus);
+
+/**
+ * @route   GET /api/v1/payments/onboarding-link
+ * @desc    Get Stripe onboarding link for the authenticated organization's Connect account
+ * @access  Private - Organization role only
+ */
+router.get('/onboarding-link', protect, authorize('organization'), getOnboardingLink);
+
+/**
+ * @route   POST /api/v1/payments/withdraw
+ * @desc    Withdraw funds from organizational Stripe account
+ * @access  Private - Organization role only
+ */
+router.post('/withdraw', protect, authorize('organization'), withdrawFunds);
+
+/**
+ * @route   GET /api/v1/payments/connect-balance/:accountId
+ * @desc    Get Stripe Connect balance by account ID
+ * @access  Private
+ */
+router.get('/connect-balance/:accountId', protect, getConnectBalance);
 
 module.exports = router;

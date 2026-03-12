@@ -33,8 +33,25 @@ import {
   MagnifyingGlassPlusIcon,
   UsersIcon,
 } from "@heroicons/react/24/outline";
+import { BanknotesIcon } from "@heroicons/react/24/solid";
 import { API_BASE_URL_V1, API_BASE_URL, getFileUrl, getUploadUrl } from "@/configs/api";
 import { Avatar, Card, CardBody } from "@material-tailwind/react";
+
+// Phone number formatting function
+const formatPhoneNumber = (value) => {
+  if (!value) return '';
+  const phoneNumber = value.replace(/\D/g, '');
+  const limitedNumber = phoneNumber.slice(0, 10);
+  if (limitedNumber.length === 0) {
+    return value;
+  } else if (limitedNumber.length <= 3) {
+    return `(${limitedNumber}`;
+  } else if (limitedNumber.length <= 6) {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+  } else {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
+  }
+};
 
 export function OrganizationDetails() {
   const { id } = useParams();
@@ -45,6 +62,8 @@ export function OrganizationDetails() {
   const [activeTab, setActiveTab] = useState("basic");
   const [homelessPeople, setHomelessPeople] = useState([]);
   const [loadingHomeless, setLoadingHomeless] = useState(false);
+  const [donations, setDonations] = useState([]);
+  const [loadingDonations, setLoadingDonations] = useState(false);
 
   useEffect(() => {
     const fetchOrganizationDetails = async () => {
@@ -126,6 +145,46 @@ export function OrganizationDetails() {
     };
 
     fetchHomelessPeople();
+  }, [activeTab, id]);
+
+  // Fetch donations when donations tab is active
+  useEffect(() => {
+    const fetchDonations = async () => {
+      if (activeTab !== 'donations' || !id) return;
+
+      try {
+        setLoadingDonations(true);
+
+        const sessionData = localStorage.getItem('auth_session');
+        const token = sessionData ? JSON.parse(sessionData).token : null;
+
+        const response = await fetch(`${API_BASE_URL_V1}/donations/organization/${id}?limit=100`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch donations');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setDonations(data.data.donations || []);
+        } else {
+          setDonations([]);
+        }
+      } catch (err) {
+        console.error('Fetch donations error:', err);
+        setDonations([]);
+      } finally {
+        setLoadingDonations(false);
+      }
+    };
+
+    fetchDonations();
   }, [activeTab, id]);
 
   const formatDate = (dateString) => {
@@ -305,6 +364,11 @@ export function OrganizationDetails() {
       value: "timeline",
       icon: ClockIcon,
     },
+    {
+      label: "Donations",
+      value: "donations",
+      icon: BanknotesIcon,
+    },
   ];
 
 
@@ -400,7 +464,7 @@ export function OrganizationDetails() {
                           }`}>
                           <span className="hidden sm:inline">{label}</span>
                           <span className="sm:hidden">
-                            {value === "basic" ? "Basic" : value === "address" ? "Address" : value === "media" ? "Media" : value === "homeless" ? "People" : "Timeline"}
+                            {value === "basic" ? "Basic" : value === "address" ? "Address" : value === "media" ? "Media" : value === "homeless" ? "People" : value === "donations" ? "Donations" : "Timeline"}
                           </span>
                         </span>
                       </div>
@@ -466,7 +530,7 @@ export function OrganizationDetails() {
                         <div className="p-1.5 bg-blue-100 rounded-lg">
                           <PhoneIcon className="w-4 h-4 text-blue-600" />
                         </div>
-                        <p className="text-gray-900 font-semibold text-lg">{organization.contactPhone || 'N/A'}</p>
+                        <p className="text-gray-900 font-semibold text-lg">{organization.contactPhone ? formatPhoneNumber(organization.contactPhone) : 'N/A'}</p>
                       </div>
                     </div>
                   </div>
@@ -820,8 +884,8 @@ export function OrganizationDetails() {
                           <tbody>
                             {homelessPeople.map((person, key) => {
                               const className = `py-3 px-5 ${key === homelessPeople.length - 1
-                                  ? ""
-                                  : "border-b border-blue-gray-200"
+                                ? ""
+                                : "border-b border-blue-gray-200"
                                 }`;
                               const getHomelessFileUrl = (filePath) => {
                                 if (!filePath) return null;
@@ -1058,6 +1122,159 @@ export function OrganizationDetails() {
                     </div>
                   )}
                 </div>
+              </TabPanel>
+
+              {/* Donations Tab */}
+              <TabPanel value="donations" className="p-0">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <BanknotesIcon className="w-6 h-6 text-green-600" />
+                  </div>
+                  <Typography variant="h5" className="text-gray-900 font-bold">
+                    Donations Received
+                  </Typography>
+                  <Typography variant="small" className="text-gray-500">
+                    ({donations.length} {donations.length === 1 ? 'donation' : 'donations'})
+                  </Typography>
+                </div>
+
+                {loadingDonations ? (
+                  <div className="p-8 text-center">
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin h-8 w-8 text-green-600"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <Typography color="blue-gray" className="mt-4">Loading donations...</Typography>
+                  </div>
+                ) : donations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                      <BanknotesIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <Typography color="blue-gray" className="text-lg mb-2">
+                      No donations received
+                    </Typography>
+                    <Typography variant="small" color="gray" className="text-sm">
+                      This organization has not received any donations yet.
+                    </Typography>
+                  </div>
+                ) : (
+                  <Card className="border border-blue-gray-200 shadow-sm">
+                    <CardBody className="px-0 pt-0 pb-2">
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[640px] table-auto text-left">
+                          <thead>
+                            <tr>
+                              {["Date", "Donor", "Homeless Person", "Type", "Org Share / Total", "Status"].map((el) => (
+                                <th
+                                  key={el}
+                                  className="border-b border-blue-gray-400 py-3 px-5 text-left w-auto min-w-[120px]"
+                                >
+                                  <Typography
+                                    variant="small"
+                                    className="text-[13px] font-bold uppercase text-blue-gray-400"
+                                  >
+                                    {el}
+                                  </Typography>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {donations.map((donation, key) => {
+                              const className = `py-3 px-5 ${key === donations.length - 1 ? "" : "border-b border-blue-gray-200"}`;
+
+                              const getStatusColor = (status) => {
+                                switch (status?.toLowerCase()) {
+                                  case 'completed': return 'green';
+                                  case 'pending': return 'amber';
+                                  case 'cancelled':
+                                  case 'failed': return 'red';
+                                  default: return 'gray';
+                                }
+                              };
+
+                              return (
+                                <tr key={donation._id || key} className="hover:bg-blue-gray-50 transition-colors">
+                                  <td className={className}>
+                                    <Typography className="text-sm font-medium text-blue-gray-900">
+                                      {formatDate(donation.createdAt)}
+                                    </Typography>
+                                  </td>
+                                  <td className={className}>
+                                    <Typography className="text-sm font-semibold text-blue-gray-900">
+                                      {donation.donorId?.donorFullName || 'Anonymous'}
+                                    </Typography>
+                                    <Typography className="text-xs text-blue-gray-500">
+                                      {donation.donorId?.donorEmail || ''}
+                                    </Typography>
+                                  </td>
+                                  <td className={className}>
+                                    <Typography className="text-sm font-medium text-blue-gray-600">
+                                      {donation.homelessId?.fullName || 'N/A'}
+                                    </Typography>
+                                  </td>
+                                  <td className={className}>
+                                    <Chip
+                                      size="sm"
+                                      variant="ghost"
+                                      value={donation.donationType || 'Unknown'}
+                                      color={donation.donationType === 'Money' ? 'green' : 'blue'}
+                                      className="inline-block"
+                                    />
+                                  </td>
+                                  <td className={className}>
+                                    {donation.donationType === 'Money' ? (
+                                      <div>
+                                        <Typography className="text-sm font-bold text-gray-900">
+                                          {(donation.organizationAmount !== undefined ? donation.organizationAmount : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {donation.currency || 'USD'}
+                                        </Typography>
+                                        <Typography className="text-xs text-blue-gray-500 mt-0.5" title="Net Donation Amount (After Fees)">
+                                          Total: {(donation.netAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {donation.currency || 'USD'}
+                                        </Typography>
+                                      </div>
+                                    ) : (
+                                      <Typography className="text-sm font-bold text-gray-900">
+                                        {donation.itemDetails || 'N/A'}
+                                      </Typography>
+                                    )}
+                                  </td>
+                                  <td className={`${className} min-w-[120px]`}>
+                                    <div className="w-max">
+                                      <Chip
+                                        size="sm"
+                                        value={donation.status || 'Pending'}
+                                        color={getStatusColor(donation.status)}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardBody>
+                  </Card>
+                )}
               </TabPanel>
             </TabsBody>
           </Tabs>

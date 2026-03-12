@@ -24,7 +24,25 @@ import {
   InformationCircleIcon,
   PencilIcon,
 } from "@heroicons/react/24/outline";
+import { BanknotesIcon } from "@heroicons/react/24/solid";
 import { API_BASE_URL_V1 } from "@/configs/api";
+import { Card, CardBody } from "@material-tailwind/react";
+
+// Phone number formatting function
+const formatPhoneNumber = (value) => {
+  if (!value) return '';
+  const phoneNumber = value.replace(/\D/g, '');
+  const limitedNumber = phoneNumber.slice(0, 10);
+  if (limitedNumber.length === 0) {
+    return value;
+  } else if (limitedNumber.length <= 3) {
+    return `(${limitedNumber}`;
+  } else if (limitedNumber.length <= 6) {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+  } else {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
+  }
+};
 
 export function DonorDetails() {
   const { id } = useParams();
@@ -33,6 +51,8 @@ export function DonorDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("basic");
+  const [donations, setDonations] = useState([]);
+  const [loadingDonations, setLoadingDonations] = useState(false);
 
   useEffect(() => {
     const fetchDonorDetails = async () => {
@@ -82,6 +102,46 @@ export function DonorDetails() {
       fetchDonorDetails();
     }
   }, [id]);
+
+  // Fetch donations when donations tab is active
+  useEffect(() => {
+    const fetchDonations = async () => {
+      if (activeTab !== 'donations' || !id) return;
+
+      try {
+        setLoadingDonations(true);
+
+        const sessionData = localStorage.getItem('auth_session');
+        const token = sessionData ? JSON.parse(sessionData).token : null;
+
+        const response = await fetch(`${API_BASE_URL_V1}/donations/donor/${id}?limit=100`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch donations');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setDonations(data.data.donations || []);
+        } else {
+          setDonations([]);
+        }
+      } catch (err) {
+        console.error('Fetch donations error:', err);
+        setDonations([]);
+      } finally {
+        setLoadingDonations(false);
+      }
+    };
+
+    fetchDonations();
+  }, [activeTab, id]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -139,8 +199,8 @@ export function DonorDetails() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
           <Typography color="red" className="mb-4">{error}</Typography>
-          <Button 
-            onClick={() => navigate("/dashboard/donors")} 
+          <Button
+            onClick={() => navigate("/dashboard/donors")}
             className="bg-blue-600 text-white"
           >
             Back to Donors
@@ -155,8 +215,8 @@ export function DonorDetails() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
           <Typography color="blue-gray" className="mb-4">Donor not found</Typography>
-          <Button 
-            onClick={() => navigate("/dashboard/donors")} 
+          <Button
+            onClick={() => navigate("/dashboard/donors")}
             className="bg-blue-600 text-white"
           >
             Back to Donors
@@ -184,11 +244,16 @@ export function DonorDetails() {
       value: "status",
       icon: ClockIcon,
     },
+    {
+      label: "Donations",
+      value: "donations",
+      icon: BanknotesIcon,
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent"}}>
+      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent" }}>
         {/* Header Section */}
         <div className="bg-white rounded-2xl shadow-md p-3 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -211,7 +276,7 @@ export function DonorDetails() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-             
+
               <Button
                 size="sm"
                 variant="outlined"
@@ -245,15 +310,13 @@ export function DonorDetails() {
                       className="px-2 sm:px-3 md:px-4 py-3 font-semibold text-xs sm:text-sm md:text-base transition-all whitespace-nowrap"
                     >
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 inline-block ${
-                          isActive ? "text-blue-600" : "text-gray-500"
-                        }`} />
-                        <span className={`${
-                          isActive ? "text-blue-600" : "text-gray-600"
-                        }`}>
+                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 inline-block ${isActive ? "text-blue-600" : "text-gray-500"
+                          }`} />
+                        <span className={`${isActive ? "text-blue-600" : "text-gray-600"
+                          }`}>
                           <span className="hidden sm:inline">{label}</span>
                           <span className="sm:hidden">
-                            {value === "basic" ? "Basic" : value === "address" ? "Address" : "Status"}
+                            {value === "basic" ? "Basic" : value === "address" ? "Address" : value === "donations" ? "Donations" : "Status"}
                           </span>
                         </span>
                       </div>
@@ -305,7 +368,7 @@ export function DonorDetails() {
                         <div className="p-1.5 bg-blue-100 rounded-lg">
                           <EnvelopeIcon className="w-4 h-4 text-blue-600" />
                         </div>
-                        <a 
+                        <a
                           href={`mailto:${donor.email}`}
                           className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer font-semibold text-lg"
                         >
@@ -319,7 +382,7 @@ export function DonorDetails() {
                         <div className="p-1.5 bg-blue-100 rounded-lg">
                           <PhoneIcon className="w-4 h-4 text-blue-600" />
                         </div>
-                        <p className="text-gray-900 font-semibold text-lg">{donor.phone || 'N/A'}</p>
+                        <p className="text-gray-900 font-semibold text-lg">{donor.phone ? formatPhoneNumber(donor.phone) : 'N/A'}</p>
                       </div>
                     </div>
                   </div>
@@ -378,17 +441,6 @@ export function DonorDetails() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="p-4 rounded-lg bg-gray-50">
-                    <label className="block text-gray-500 text-sm mb-2 font-medium">Verification Status</label>
-                    <div className="flex items-center gap-2">
-                      {donor.verified ? (
-                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircleIcon className="w-5 h-5 text-amber-500" />
-                      )}
-                      <p className="text-gray-900 font-semibold text-lg">{donor.verified ? 'Verified' : 'Pending Verification'}</p>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-lg bg-gray-50">
                     <label className="block text-gray-500 text-sm mb-2 font-medium">Account Status</label>
                     <div className="flex items-center gap-2">
                       {donor.isActive ? (
@@ -399,7 +451,17 @@ export function DonorDetails() {
                       <p className="text-gray-900 font-semibold text-lg">{donor.isActive ? 'Active' : 'Inactive'}</p>
                     </div>
                   </div>
-                  {donor.updatedAt && (
+                  {donor.updatedAt && (<div className="p-4 rounded-lg bg-gray-50">
+                    <label className="block text-gray-500 text-sm mb-2 font-medium">Last Updated</label>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-blue-100 rounded-lg">
+                        <ClockIcon className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <p className="text-gray-900 font-semibold text-lg">{formatDate(donor.updatedAt)}</p>
+                    </div>
+                  </div>
+                  )}
+                  {/* {donor.updatedAt && (
                     <div className="p-4 rounded-lg bg-gray-50 sm:col-span-2">
                       <label className="block text-gray-500 text-sm mb-2 font-medium">Last Updated</label>
                       <div className="flex items-center gap-2">
@@ -409,8 +471,153 @@ export function DonorDetails() {
                         <p className="text-gray-900 font-semibold text-lg">{formatDate(donor.updatedAt)}</p>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
+              </TabPanel>
+
+              {/* Donations Tab */}
+              <TabPanel value="donations" className="p-0">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <BanknotesIcon className="w-6 h-6 text-green-600" />
+                  </div>
+                  <Typography variant="h5" className="text-gray-900 font-bold">
+                    Donations Made
+                  </Typography>
+                  <Typography variant="small" className="text-gray-500">
+                    ({donations.length} {donations.length === 1 ? 'donation' : 'donations'})
+                  </Typography>
+                </div>
+
+                {loadingDonations ? (
+                  <div className="p-8 text-center">
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="animate-spin h-8 w-8 text-green-600"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    </div>
+                    <Typography color="blue-gray" className="mt-4">Loading donations...</Typography>
+                  </div>
+                ) : donations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                      <BanknotesIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <Typography color="blue-gray" className="text-lg mb-2">
+                      No donations made
+                    </Typography>
+                    <Typography variant="small" color="gray" className="text-sm">
+                      This donor has not made any donations yet.
+                    </Typography>
+                  </div>
+                ) : (
+                  <Card className="border border-blue-gray-200 shadow-sm">
+                    <CardBody className="px-0 pt-0 pb-2">
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[640px] table-auto text-left">
+                          <thead>
+                            <tr>
+                              {["Date", "Organization", "Homeless Person", "Type", "Amount", "Status"].map((el) => (
+                                <th
+                                  key={el}
+                                  className="border-b border-blue-gray-400 py-3 px-5 text-left w-auto min-w-[120px]"
+                                >
+                                  <Typography
+                                    variant="small"
+                                    className="text-[13px] font-bold uppercase text-blue-gray-400"
+                                  >
+                                    {el}
+                                  </Typography>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {donations.map((donation, key) => {
+                              const className = `py-3 px-5 ${key === donations.length - 1 ? "" : "border-b border-blue-gray-200"}`;
+
+                              const getStatusColor = (status) => {
+                                switch (status?.toLowerCase()) {
+                                  case 'completed': return 'green';
+                                  case 'pending': return 'amber';
+                                  case 'cancelled':
+                                  case 'failed': return 'red';
+                                  default: return 'gray';
+                                }
+                              };
+
+                              return (
+                                <tr key={donation._id || key} className="hover:bg-blue-gray-50 transition-colors">
+                                  <td className={className}>
+                                    <Typography className="text-sm font-medium text-blue-gray-900">
+                                      {formatDate(donation.createdAt)}
+                                    </Typography>
+                                  </td>
+                                  <td className={className}>
+                                    <Typography className="text-sm font-semibold text-blue-gray-900">
+                                      {donation.organizationId?.orgName || donation.organizationId?.name || 'Platform'}
+                                    </Typography>
+                                  </td>
+                                  <td className={className}>
+                                    <Typography className="text-sm font-medium text-blue-gray-600">
+                                      {donation.homelessId?.fullName || donation.homelessId?.name || 'N/A'}
+                                    </Typography>
+                                  </td>
+                                  <td className={className}>
+                                    <Chip
+                                      size="sm"
+                                      variant="ghost"
+                                      value={donation.donationType || 'Unknown'}
+                                      color={donation.donationType === 'Money' ? 'green' : 'blue'}
+                                      className="inline-block"
+                                    />
+                                  </td>
+                                  <td className={className}>
+                                    {donation.donationType === 'Money' ? (
+                                      <Typography className="text-sm font-bold text-gray-900">
+                                        {(donation.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {donation.currency || 'USD'}
+                                      </Typography>
+                                    ) : (
+                                      <Typography className="text-sm font-bold text-gray-900">
+                                        {donation.itemDetails || 'N/A'}
+                                      </Typography>
+                                    )}
+                                  </td>
+                                  <td className={`${className} min-w-[120px]`}>
+                                    <div className="w-max">
+                                      <Chip
+                                        size="sm"
+                                        value={donation.status || 'Pending'}
+                                        color={getStatusColor(donation.status)}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardBody>
+                  </Card>
+                )}
               </TabPanel>
             </TabsBody>
           </Tabs>

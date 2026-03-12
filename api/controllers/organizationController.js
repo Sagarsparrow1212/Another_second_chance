@@ -232,6 +232,7 @@ const getOrganizationById = async (req, res) => {
       isUserVerified: organization.userId && organization.userId.isVerified ? organization.userId.isVerified : false,
       isUserActive: organization.userId && organization.userId.isActive !== undefined ? organization.userId.isActive : true,
       hasPassword: hasPassword, // Flag to indicate password exists
+      stripeAccountId: organization.stripeAccountId || null,
       logo: organization.logo || '', // Organization logo
       documents: organization.documents || [],
       photos: organization.photos || [],
@@ -380,6 +381,7 @@ const getMyOrganization = async (req, res) => {
       userEmail: organization.userId && organization.userId.email ? organization.userId.email : '',
       isUserVerified: isUserVerified,
       isUserActive: organization.userId && organization.userId.isActive !== undefined ? organization.userId.isActive : true,
+      stripeAccountId: organization.stripeAccountId || null,
       logo: organization.logo || '', // Organization logo
       documents: organization.documents || [],
       photos: organization.photos || [],
@@ -1392,7 +1394,7 @@ const getOrganizationDashboard = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalAmount: { $sum: { $ifNull: ['$netAmount', '$amount'] } },
+          totalAmount: { $sum: { $cond: [{ $gt: ['$netAmount', 0] }, '$netAmount', '$amount'] } },
           count: { $sum: 1 }
         }
       }
@@ -1423,7 +1425,7 @@ const getOrganizationDashboard = async (req, res) => {
       {
         $group: {
           _id: { $month: '$createdAt' },
-          totalAmount: { $sum: { $ifNull: ['$netAmount', '$amount'] } },
+          totalAmount: { $sum: { $cond: [{ $gt: ['$netAmount', 0] }, '$netAmount', '$amount'] } },
           count: { $sum: 1 }
         }
       },
@@ -1459,7 +1461,7 @@ const getOrganizationDashboard = async (req, res) => {
       kpiCards: [
         {
           title: 'Donations Received',
-          value: `$${donationsReceived.toLocaleString()}`,
+          value: `${donationsReceived.toLocaleString()}`,
           description: `${donationsCount} total donations`,
           icon: 'dollar-sign', // Changed icon to match donation theme
         },

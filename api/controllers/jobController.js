@@ -253,10 +253,33 @@ const createJob = async (req, res) => {
                 const homelessUsers = await User.find({
                     role: 'homeless',
                     isActive: true,
-                    fcmTokens: { $exists: true, $not: { $size: 0 } } // Only users with tokens
-                }).select('fcmTokens');
+                }).select('_id fcmTokens');
 
                 if (homelessUsers.length > 0) {
+                    const notificationTitle = 'New Job Alert!';
+                    const notificationBody = `A new job "${job.title}" is available in ${job.location.address}. Apply now!`;
+
+                    // 1.5 Save notification to all active homeless users in the database
+                    const userIds = homelessUsers.map(u => u._id);
+                    await User.updateMany(
+                        { _id: { $in: userIds } },
+                        {
+                            $push: {
+                                notifications: {
+                                    title: notificationTitle,
+                                    message: notificationBody,
+                                    type: 'new_job',
+                                    data: {
+                                        type: 'new_job',
+                                        jobId: job._id.toString()
+                                    },
+                                    isRead: false,
+                                    createdAt: new Date()
+                                }
+                            }
+                        }
+                    );
+
                     // 2. Collect all tokens (flatten array)
                     const allTokens = homelessUsers.reduce((tokens, user) => {
                         if (user.fcmTokens && user.fcmTokens.length > 0) {
@@ -267,9 +290,6 @@ const createJob = async (req, res) => {
 
                     // 3. Send multicast notification
                     if (allTokens.length > 0) {
-                        const notificationTitle = 'New Job Alert!';
-                        const notificationBody = `A new job "${job.title}" is available in ${job.location.address}. Apply now!`;
-
                         // Remove duplicates from tokens array
                         const uniqueTokens = [...new Set(allTokens)];
                         console.log(`[Job Notification] Sending to ${uniqueTokens.length} devices...`);

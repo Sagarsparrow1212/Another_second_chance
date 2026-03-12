@@ -36,7 +36,7 @@ const isBounceError = (error) => {
   if (!error || !error.message) {
     return false;
   }
-  
+
   const errorMessage = error.message.toLowerCase();
   const bouncePatterns = [
     'address not found',
@@ -55,7 +55,7 @@ const isBounceError = (error) => {
     'bounce',
     'address rejected',
   ];
-  
+
   return bouncePatterns.some(pattern => errorMessage.includes(pattern));
 };
 
@@ -95,8 +95,8 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
     // Validate email address before sending
     if (!isValidEmail(recipientEmail)) {
       console.warn(`Invalid email address for approval email: ${recipientEmail}`);
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: "Invalid email address",
         error: "Email address format is invalid or contains invalid patterns"
       };
@@ -110,7 +110,7 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
     }
 
     // App Branding
-    const APP_NAME = "HomelyHope";
+    const APP_NAME = "Another Second Chance";
     const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
     const LOGO_URL = 'https://drive.google.com/uc?export=view&id=1RG786HfMBfpRakTrx7_1dp8DzQR1_bnh';
 
@@ -124,7 +124,7 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>HomelyHope – Organization Approved</title>
+  <title>Another Second Chance – Organization Approved</title>
 
   <style>
     body {
@@ -225,7 +225,7 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
     <!-- HEADER -->
    <!-- HEADER -->
 <div class="header">
-  <h1 class="app-title">HomelyHope</h1>
+  <h1 class="app-title">Another Second Chance</h1>
   <p class="app-subtitle">Organization Approved 🎉</p>
 </div>
 
@@ -235,7 +235,7 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
       <p>Hello <strong>${organizationName}</strong>,</p>
 
       <p>We are happy to inform you that your organization has been successfully
-        <strong style="color:#10b981;">approved</strong> and activated on the HomelyHope platform.</p>
+        <strong style="color:#10b981;">approved</strong> and activated on the Another Second Chance platform.</p>
 
       <div class="highlight-box">
         <p><strong>Request ID:</strong> ${requestId}</p>
@@ -257,13 +257,13 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
 
       <p style="margin-top: 12px;">
         Best Regards,<br />
-        <strong>Team HomelyHope</strong>
+        <strong>Team Another Second Chance</strong>
       </p>
     </div>
 
     <!-- FOOTER -->
     <div class="footer">
-      © 2026 HomelyHope — All Rights Reserved.
+      © 2026 Another Second Chance — All Rights Reserved.
     </div>
 
   </div>
@@ -306,14 +306,14 @@ const sendApprovalEmail = async (recipientEmail, organizationName, requestId) =>
     // Check if it's a bounce/invalid email error
     if (isBounceError(error)) {
       console.warn(`Email bounce detected for ${recipientEmail}:`, error.message);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: "Invalid email address - email could not be delivered",
         bounce: true,
         message: "The email address appears to be invalid or does not exist"
       };
     }
-    
+
     console.error("Error sending approval email:", error);
     return { success: false, error: error.message };
   }
@@ -333,8 +333,8 @@ const sendRejectionEmail = async (recipientEmail, organizationName, rejectionRea
     // Validate email address before sending
     if (!isValidEmail(recipientEmail)) {
       console.warn(`Invalid email address for rejection email: ${recipientEmail}`);
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: "Invalid email address",
         error: "Email address format is invalid or contains invalid patterns"
       };
@@ -348,7 +348,7 @@ const sendRejectionEmail = async (recipientEmail, organizationName, rejectionRea
     }
 
     // App Branding
-    const APP_NAME = "HomelyHope";
+    const APP_NAME = "Another Second Chance";
     const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
     const LOGO_URL = 'https://drive.google.com/uc?export=view&id=1RG786HfMBfpRakTrx7_1dp8DzQR1_bnh';
 
@@ -365,7 +365,7 @@ const sendRejectionEmail = async (recipientEmail, organizationName, rejectionRea
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
 
-  <title>HomelyHope – Profile Review Update</title>
+  <title>Another Second Chance – Profile Review Update</title>
 
   <style>
     body {
@@ -474,7 +474,7 @@ const sendRejectionEmail = async (recipientEmail, organizationName, rejectionRea
     <!-- HEADER -->
    <!-- HEADER -->
 <div class="header">
-  <h1 class="app-title">HomelyHope</h1>
+  <h1 class="app-title">Another Second Chance</h1>
   <p class="app-subtitle">Profile Review Update</p>
 </div>
 
@@ -514,14 +514,14 @@ const sendRejectionEmail = async (recipientEmail, organizationName, rejectionRea
 
       <p style="margin-top:15px;">
         Best regards,<br>
-        <strong>Team HomelyHope</strong>
+        <strong>Team Another Second Chance</strong>
       </p>
 
     </div>
 
     <!-- FOOTER -->
     <div class="footer">
-      © 2026 HomelyHope — All Rights Reserved.
+      © 2026 Another Second Chance — All Rights Reserved.
     </div>
 
   </div>
@@ -568,14 +568,14 @@ The ${APP_NAME} Team
     // Check if it's a bounce/invalid email error
     if (isBounceError(error)) {
       console.warn(`Email bounce detected for ${recipientEmail}:`, error.message);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: "Invalid email address - email could not be delivered",
         bounce: true,
         message: "The email address appears to be invalid or does not exist"
       };
     }
-    
+
     console.error('Error sending rejection email:', error);
     return { success: false, error: error.message };
   }
@@ -591,8 +591,8 @@ const sendResetPasswordOtpEmail = async (recipientEmail, otp) => {
     // Validate email address before sending
     if (!isValidEmail(recipientEmail)) {
       console.warn(`Invalid email address for OTP email: ${recipientEmail}`);
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: "Invalid email address",
         error: "Email address format is invalid or contains invalid patterns"
       };
@@ -605,7 +605,7 @@ const sendResetPasswordOtpEmail = async (recipientEmail, otp) => {
       return { success: false, message: "Email service not configured" };
     }
 
-    const APP_NAME = "HomelyHope";
+    const APP_NAME = "Another Second Chance";
     const LOGO_URL =
       "https://drive.google.com/uc?export=view&id=1RG786HfMBfpRakTrx7_1dp8DzQR1_bnh";
 
@@ -798,14 +798,14 @@ If you did not request this, ignore this email.
     // Check if it's a bounce/invalid email error
     if (isBounceError(error)) {
       console.warn(`Email bounce detected for ${recipientEmail}:`, error.message);
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: "Invalid email address - email could not be delivered",
         bounce: true,
         message: "The email address appears to be invalid or does not exist"
       };
     }
-    
+
     console.error("Error sending OTP email:", error);
     return { success: false, error: error.message };
   }

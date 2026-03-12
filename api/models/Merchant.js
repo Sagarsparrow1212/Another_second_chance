@@ -5,31 +5,31 @@ const mongoose = require("mongoose");
 
 const merchantSchema = new mongoose.Schema(
     {
-        userId:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"User",
-            required:true,
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
         },
-        businessName:{
-            type:String,
+        businessName: {
+            type: String,
             required: true
         },
-        businessEmail:{
-            type:String,
-            required:[true, "Email is required"],
-            unique:true,
-            lowercase:true,
-            trim:true,
+        businessEmail: {
+            type: String,
+            required: [true, "Email is required"],
+            unique: true,
+            lowercase: true,
+            trim: true,
             match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email address'],
         },
         phoneNumber:
         {
-            type:String,
-            required:true
+            type: String,
+            required: true
         },
-        businessType:{
-            type:String,
-            enum:['Shop','Vendor','Services','Restaurant','Other'],
+        businessType: {
+            type: String,
+            enum: ['Shop', 'Vendor', 'Services', 'Restaurant', 'Other'],
         },
         streetAddress: { type: String, required: true },
         city: { type: String, required: true },
@@ -59,4 +59,4 @@ const merchantSchema = new mongoose.Schema(
 );
 
 
-module.exports = mongoose.model("Mechant",merchantSchema);
+module.exports = mongoose.model("Mechant", merchantSchema);

@@ -25,13 +25,12 @@ const walletTransactionSchema = new mongoose.Schema({
         required: true
     },
     referenceId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         required: true // e.g., Donation ID or Payout ID
     },
     referenceModel: {
         type: String,
-        required: true,
-        enum: ['Donation', 'Payout', 'Adjustment']
+        required: true
     },
     status: {
         type: String,

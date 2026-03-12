@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 const { encrypt, decrypt } = require('../services/cryptoService');
 
+const notificationSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    type: { type: String, default: 'system' }, // 'chat', 'system', 'job', etc.
+    data: { type: mongoose.Schema.Types.Mixed },
+    isRead: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
@@ -65,6 +74,10 @@ const userSchema = new mongoose.Schema({
     fcmTokens: {
         type: [String],
         default: [],
+    },
+    notifications: {
+        type: [notificationSchema],
+        default: []
     },
 }, { timestamps: true }); // timestamps will add createdAt and updatedAt fields to the schema
 
