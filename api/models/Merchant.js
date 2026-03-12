@@ -28,8 +28,7 @@ const merchantSchema = new mongoose.Schema(
             required: true
         },
         businessType: {
-            type: String,
-            enum: ['Shop', 'Vendor', 'Services', 'Restaurant', 'Other'],
+            type: String
         },
         streetAddress: { type: String, required: true },
         city: { type: String, required: true },
