@@ -1,34 +1,24 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Card,
-  CardBody,
-  Typography,
-  Input,
-  Button,
-  Alert,
-  Textarea,
-} from "@material-tailwind/react";
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  UserIcon,
-  MapPinIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  DocumentTextIcon,
-  BriefcaseIcon,
-  AcademicCapIcon,
-  ChevronDownIcon,
-  KeyIcon,
-  LockClosedIcon,
-  PhotoIcon,
-  XMarkIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  BuildingOffice2Icon,
-} from "@heroicons/react/24/outline";
-import { API_BASE_URL_V1, API_BASE_URL, getFileUrl } from "@/configs/api";
+  ArrowLeft,
+  User,
+  Building2,
+  MapPin,
+  Lock,
+  Phone,
+  Mail,
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  X,
+  FileText,
+  Activity,
+  Languages,
+} from "lucide-react";
+import { API_BASE_URL_V1, getFileUrl } from "@/configs/api";
 import LogoLoader from "@/components/LogoLoader";
 
 const SKILLS_OPTIONS = [
@@ -46,15 +36,7 @@ const SKILLS_OPTIONS = [
   "Other",
 ];
 
-
-
-
-const LANGUAGES_OPTIONS = [
-  "English",
-  "Spanish",
-  "Other",
-];
-
+const LANGUAGES_OPTIONS = ["English", "Spanish", "Other"];
 
 export function EditHomeless() {
   const { id } = useParams();
@@ -63,23 +45,9 @@ export function EditHomeless() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Collapsible sections state
-  const [openSections, setOpenSections] = useState({
-    account: true,
-    personal: true,
-    skills: true,
-    location: true,
-  });
-
-  const toggleSection = (section) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  // Form state
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -102,1243 +70,573 @@ export function EditHomeless() {
     organizationCutPercentage: "",
   });
 
-  // Organizations state
   const [organizations, setOrganizations] = useState([]);
-  const [loadingOrgs, setLoadingOrgs] = useState(false);
-
-  // Validation errors
-  const [errors, setErrors] = useState({});
-
-  // Track if password has been changed
-  const [passwordChanged, setPasswordChanged] = useState(false);
-
-  // Password visibility states
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Profile picture state
   const [profilePicture, setProfilePicture] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState(null);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [errors, setErrors] = useState({});
 
-  // Phone number formatting function
   const formatPhoneNumber = (value) => {
-    // Remove all non-digit characters
-    const phoneNumber = value.replace(/\D/g, '');
-
-    // Limit to 10 digits (US phone number format)
+    const phoneNumber = value.replace(/\D/g, "");
     const limitedNumber = phoneNumber.slice(0, 10);
-
-    // Format: (555) 123-4567
-    if (limitedNumber.length === 0) {
-      return '';
-    } else if (limitedNumber.length <= 3) {
-      return `(${limitedNumber}`;
-    } else if (limitedNumber.length <= 6) {
-      return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
-    } else {
-      return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
-    }
+    if (limitedNumber.length === 0) return "";
+    if (limitedNumber.length <= 3) return `(${limitedNumber}`;
+    if (limitedNumber.length <= 6) return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
   };
 
-  // Fetch organizations
   useEffect(() => {
     const fetchOrganizations = async () => {
-      setLoadingOrgs(true);
       try {
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = localStorage.getItem("auth_session");
         const token = sessionData ? JSON.parse(sessionData).token : null;
-
-        const response = await fetch(`${API_BASE_URL_V1}/organizations?limit=1000`, {
+        const res = await fetch(`${API_BASE_URL_V1}/organizations?limit=1000`, {
           headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch organizations');
-        }
-
-        const data = await response.json();
-        if (data.success) {
-          setOrganizations(data.data.organizations);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) setOrganizations(data.data.organizations || []);
         }
       } catch (err) {
-        console.error('Fetch organizations error:', err);
-      } finally {
-        setLoadingOrgs(false);
+        console.error("Fetch orgs error:", err);
       }
     };
-
     fetchOrganizations();
   }, []);
 
-  // Ensure organizationId is set when both organizations and homeless data are loaded
-  useEffect(() => {
-    if (organizations.length > 0 && formData.organizationId) {
-      const orgIdStr = String(formData.organizationId);
-      const orgExists = organizations.find(org => String(org.id) === orgIdStr);
-
-      if (orgExists) {
-        console.log('Organization found and set:', {
-          orgId: orgIdStr,
-          orgName: orgExists.name || orgExists.orgName
-        });
-      } else {
-        console.warn('Organization ID not found in organizations list:', {
-          formDataOrgId: formData.organizationId,
-          availableOrgs: organizations.map(o => ({ id: String(o.id), name: o.name || o.orgName }))
-        });
-      }
-    }
-  }, [organizations, formData.organizationId]);
-
-  // Fetch homeless user data
   useEffect(() => {
     const fetchHomeless = async () => {
       try {
         setFetching(true);
         setError("");
-
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = localStorage.getItem("auth_session");
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
-        const response = await fetch(`${API_BASE_URL_V1}/homeless/${id}`, {
+        const res = await fetch(`${API_BASE_URL_V1}/homeless/${id}`, {
           headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data && data.message ? data.message : 'Failed to fetch homeless user details');
-        }
+        if (!res.ok) throw new Error("Failed to fetch beneficiary details");
 
+        const data = await res.json();
         if (data.success) {
-          const homeless = data.data;
-          // Extract organizationId - handle both string and object formats
+          const h = data.data.homeless || data.data;
           let orgId = "";
-          if (homeless.organizationId) {
-            orgId = String(homeless.organizationId);
-          } else if (homeless.organization && homeless.organization.id) {
-            orgId = String(homeless.organization.id);
-          }
-
-          console.log('Homeless data loaded:', {
-            organizationId: orgId,
-            homelessOrgId: homeless.organizationId,
-            homelessOrg: homeless.organization
-          });
+          if (h.organizationId) orgId = String(h.organizationId);
+          else if (h.organization?.id) orgId = String(h.organization.id);
 
           setFormData({
-            username: homeless.username || "",
-            email: homeless.email || homeless.userEmail || homeless.contactEmail || "",
-            password: homeless.hasPassword ? "••••••••" : "",
+            username: h.username || "",
+            email: h.email || h.userEmail || "",
+            password: h.hasPassword ? "••••••••" : "",
             newPassword: "",
             confirmPassword: "",
-            fullName: homeless.fullName || homeless.name || "",
-            age: homeless.age || "",
-            gender: homeless.gender || "",
-            skillset: homeless.skillset || homeless.skills || [],
-            experience: homeless.experience || "",
-            location: homeless.location || "",
-            address: homeless.address || "",
-            contactPhone: homeless.contactPhone || homeless.phone || "",
-            contactEmail: homeless.contactEmail || homeless.email || "",
-            bio: homeless.bio || "",
-            languages: homeless.languages || [],
-            healthConditions: homeless.healthConditions || "",
+            fullName: h.fullName || h.name || "",
+            age: h.age || "",
+            gender: h.gender || "",
+            skillset: h.skillset || h.skills || [],
+            experience: h.experience || "",
+            location: h.location || "",
+            address: h.address || "",
+            contactPhone: h.contactPhone || h.phone || "",
+            contactEmail: h.contactEmail || h.email || "",
+            bio: h.bio || "",
+            languages: h.languages || ["English"],
+            healthConditions: h.healthConditions || "",
             organizationId: orgId,
-            organizationCutPercentage: homeless.organizationCutPercentage !== undefined && homeless.organizationCutPercentage !== null ? String(homeless.organizationCutPercentage) : "",
+            organizationCutPercentage:
+              h.organizationCutPercentage !== undefined && h.organizationCutPercentage !== null
+                ? String(h.organizationCutPercentage)
+                : "",
           });
-          setPasswordChanged(false);
 
-          // Set profile picture if exists
-          if (homeless.profilePicture) {
-            const pictureUrl = homeless.profilePicture.startsWith('http')
-              ? homeless.profilePicture
-              : getFileUrl(homeless.profilePicture);
-            setProfilePicture(pictureUrl);
-            setProfilePicturePreview(pictureUrl);
+          if (h.profilePicture) {
+            const picUrl = h.profilePicture.startsWith("http")
+              ? h.profilePicture
+              : getFileUrl(h.profilePicture);
+            setProfilePicture(picUrl);
+            setProfilePicturePreview(picUrl);
           }
-        } else {
-          setError(data.message || 'Failed to fetch homeless user details');
         }
       } catch (err) {
-        console.error('Fetch homeless error:', err);
-        setError(err.message || 'An error occurred while fetching homeless user details');
+        console.error("Fetch homeless error:", err);
+        setError(err.message || "Error loading profile details");
       } finally {
         setFetching(false);
       }
     };
 
-    if (id) {
-      fetchHomeless();
-    }
+    if (id) fetchHomeless();
   }, [id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Auto-format phone number fields
     let formattedValue = value;
-    if (name === 'contactPhone') {
-      formattedValue = formatPhoneNumber(value);
-    }
+    if (name === "contactPhone") formattedValue = formatPhoneNumber(value);
 
-    // Validate organizationCutPercentage - only allow numbers and decimal point
-    if (name === 'organizationCutPercentage') {
-      // Allow empty string
-      if (value === '') {
-        formattedValue = '';
-      } else {
-        // Only allow numbers and one decimal point
-        const regex = /^\d*\.?\d*$/;
-        if (regex.test(value)) {
-          formattedValue = value;
-        } else {
-          // If invalid, don't update the value
-          return;
-        }
-      }
-    }
-
-    // Track password changes
-    if (name === 'newPassword' || name === 'confirmPassword') {
-      setPasswordChanged(true);
+    if (name === "organizationCutPercentage") {
+      if (value !== "" && !/^\d*\.?\d*$/.test(value)) return;
+      formattedValue = value;
     }
 
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : formattedValue,
     }));
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleMultiSelect = (name, value) => {
+  const handleToggleArrayItem = (field, item) => {
     setFormData((prev) => {
-      const currentValues = prev[name] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter((item) => item !== value)
-        : [...currentValues, value];
-      return {
-        ...prev,
-        [name]: newValues,
-      };
+      const current = prev[field] || [];
+      const updated = current.includes(item)
+        ? current.filter((i) => i !== item)
+        : [...current, item];
+      return { ...prev, [field]: updated };
     });
   };
 
-  const handleGenderChange = (e) => {
-    const { value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      gender: value,
-    }));
-    if (errors.gender) {
-      setErrors((prev) => ({
-        ...prev,
-        gender: "",
-      }));
-    }
-  };
-
   const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      setError(`Profile picture exceeds the 5MB size limit`);
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Profile picture exceeds 5MB limit");
       return;
     }
-
-    // Validate file type - only images
-    const allowedTypes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      setError(`Profile picture must be an image (JPG, PNG, GIF, WEBP)`);
-      return;
-    }
-
-    // Create preview
     const preview = URL.createObjectURL(file);
     setProfilePictureFile(file);
     setProfilePicturePreview(preview);
-    setError(""); // Clear any previous errors
+    setError("");
   };
 
-  const handleRemoveProfilePicture = () => {
+  const removeProfilePicture = () => {
     setProfilePictureFile(null);
-    // Reset preview to original profile picture if it exists
-    if (profilePicture) {
-      setProfilePicturePreview(profilePicture);
-    } else {
-      setProfilePicturePreview(null);
-    }
+    setProfilePicturePreview(null);
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    // Email validation (required)
-    if (formData.email.trim() !== "") {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email.trim())) {
-        newErrors.email = "Please enter a valid email address";
-      }
-    }
-    // Password validation (if new password is provided)
+    if (!formData.organizationId) newErrors.organizationId = "Organization is required";
     if (formData.newPassword) {
-      console.log("New password is provided");
       if (formData.newPassword.length < 8) {
-
-        console.log("Password must be at least 8 characters long");
-        newErrors.newPassword = "Password must be at least 8 characters long";
+        newErrors.newPassword = "Password must be at least 8 characters";
       }
       if (formData.newPassword !== formData.confirmPassword) {
-        console.log("Passwords do not match");
         newErrors.confirmPassword = "Passwords do not match";
       }
     }
-
-    // If new password is provided, confirm password is required
-    if (formData.newPassword && !formData.confirmPassword) {
-      console.log("Please confirm your password");
-      newErrors.confirmPassword = "Please confirm your password";
-    }
-
-    // Required fields validation
-    if (!formData.organizationId || formData.organizationId.trim() === '') {
-      newErrors.organizationId = "Organization is required";
-    }
-
-    // organizationCutPercentage validation (optional but must be 0-100, backend uses 0-30 default max check)
-    if (formData.organizationCutPercentage && formData.organizationCutPercentage !== "") {
-      const cp = parseFloat(String(formData.organizationCutPercentage));
-      if (isNaN(cp) || cp < 0 || cp > 100) {
-        newErrors.organizationCutPercentage = "Commission percentage must be between 0 and 100";
-      }
-    }
-
-    if (!formData.fullName.trim()) {
-      console.log("Full name is required");
-      newErrors.fullName = "Full name is required";
-    }
-    if (!formData.age) {
-      console.log("Age is required");
-      newErrors.age = "Age is required";
-    } else {
-      const ageNum = parseInt(formData.age);
-      if (isNaN(ageNum) || ageNum < 10 || ageNum > 90) {
-        console.log("Age must be between 10 and 90");
-        newErrors.age = "Age must be between 10 and 90";
-      }
-    }
-    if (!formData.gender) {
-      console.log("Gender is required");
-      newErrors.gender = "Gender is required";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      setError("Please fix the errors in the form");
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     setError("");
     setSuccess(false);
 
     try {
-      // Create FormData for file uploads
-      const formDataToSend = new FormData();
-
-      // Add text fields
-      formDataToSend.append('fullName', formData.fullName);
-      formDataToSend.append('age', parseInt(formData.age));
-      formDataToSend.append('gender', formData.gender);
-      formDataToSend.append('skillset', JSON.stringify(formData.skillset));
-      formDataToSend.append('experience', formData.experience || '');
-      formDataToSend.append('location', formData.location || '');
-      formDataToSend.append('address', formData.address || '');
-      formDataToSend.append('contactPhone', formData.contactPhone || '');
-      formDataToSend.append('contactEmail', formData.contactEmail || '');
-      formDataToSend.append('bio', formData.bio || '');
-      formDataToSend.append('languages', JSON.stringify(formData.languages));
-      formDataToSend.append('healthConditions', formData.healthConditions || '');
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('organizationId', formData.organizationId || '');
-
-      // Handle password update - use newPassword if provided, otherwise keep current
-      if (formData.newPassword && formData.newPassword.trim() !== '') {
-        formDataToSend.append('password', formData.newPassword);
-      }
-
-      // Add profile picture if a new one was selected
-      if (profilePictureFile) {
-        formDataToSend.append('profilePicture', profilePictureFile);
-      }
-      // Include organizationCutPercentage if provided
-      if (formData.organizationCutPercentage !== "" && formData.organizationCutPercentage !== null && formData.organizationCutPercentage !== undefined) {
-        formDataToSend.append('organizationCutPercentage', String(formData.organizationCutPercentage));
-      }
-
-      // Get token from localStorage for authentication
-      const sessionData = localStorage.getItem('auth_session');
+      const sessionData = localStorage.getItem("auth_session");
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
-      const response = await fetch(`${API_BASE_URL_V1}/homeless/${id}`, {
-        method: 'PUT',
+      const formDataToSend = new FormData();
+      formDataToSend.append("fullName", formData.fullName || "");
+      formDataToSend.append("organizationId", formData.organizationId);
+      formDataToSend.append("age", formData.age || "");
+      formDataToSend.append("gender", formData.gender || "");
+      formDataToSend.append("experience", formData.experience || "");
+      formDataToSend.append("location", formData.location || "");
+      formDataToSend.append("address", formData.address || "");
+      formDataToSend.append("contactPhone", formData.contactPhone || "");
+      formDataToSend.append("contactEmail", formData.contactEmail || "");
+      formDataToSend.append("bio", formData.bio || "");
+      formDataToSend.append("healthConditions", formData.healthConditions || "");
+      formDataToSend.append("skillset", JSON.stringify(formData.skillset));
+      formDataToSend.append("languages", JSON.stringify(formData.languages));
+
+      if (formData.organizationCutPercentage !== "") {
+        formDataToSend.append("organizationCutPercentage", String(formData.organizationCutPercentage));
+      }
+
+      if (formData.newPassword && formData.newPassword.trim() !== "") {
+        formDataToSend.append("password", formData.newPassword);
+      }
+
+      if (profilePictureFile) {
+        formDataToSend.append("profilePicture", profilePictureFile);
+      }
+
+      const res = await fetch(`${API_BASE_URL_V1}/homeless/${id}`, {
+        method: "PUT",
         headers: {
-          // Don't set Content-Type header - browser will set it with boundary for FormData
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: formDataToSend,
       });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.message || "Failed to update homeless user");
-      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to update profile");
 
       setSuccess(true);
-      setError("");
-
-      // Redirect after successful update
-      setTimeout(() => {
-        navigate("/dashboard/homeless");
-      }, 500);
+      setTimeout(() => navigate("/dashboard/homeless"), 600);
     } catch (err) {
       console.error("Update error:", err);
-      if (err.message.includes("fetch")) {
-        setError("Network error: Could not connect to server. Please check if the API server is running.");
-      } else if (err.message.includes("CORS")) {
-        setError("CORS error: Please check server configuration.");
-      } else {
-        setError(err.message || "An error occurred. Please try again.");
-      }
-      setSuccess(false);
+      setError(err.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching) {
-    return <LogoLoader message="Loading homeless user details..." />;
-  }
+  if (fetching) return <LogoLoader message="Loading beneficiary details..." />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8FBFF] via-[#EAEFF5] to-[#F8FBFF] py-4 px-4 sm:py-6 sm:px-6 lg:py-8">
-      <div className="max-w-9xl mx-auto">
-        {/* Back Button */}
-        <div className="mb-4 sm:mb-6">
-          <Button
-            variant="text"
-            size="sm"
-            className="flex items-center gap-2 normal-case text-sm font-medium text-gray-700 hover:text-gray-900 p-2"
+    <div className="space-y-6 pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-[#E7ECF2] shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
             onClick={() => navigate(-1)}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl border border-[#E7ECF2] text-[#68778D] hover:text-[#172033] hover:bg-slate-50 transition-all flex items-center gap-2 text-xs font-semibold"
           >
-            <ArrowLeftIcon className="h-4 w-4" />
+            <ArrowLeft className="w-4 h-4 text-[#68778D]" />
             <span className="hidden sm:inline">Back</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
+          </button>
+          <div className="h-6 w-px bg-[#E7ECF2]" />
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-[#172033] leading-tight">
+              Edit Beneficiary: {formData.fullName || formData.username || "Profile"}
+            </h1>
+            <p className="text-xs text-[#68778D]">Update beneficiary profile details, sponsorship and skills</p>
+          </div>
         </div>
+      </div>
 
-        {/* Main Card */}
-        <Card className="backdrop-blur-xl bg-white/40 rounded-2xl shadow-2xl border border-white/60 overflow-hidden">
-          <CardBody className="p-6 md:p-10">
-            {/* Header */}
-            <div className="mb-8 text-center">
-              <Typography variant="h3" className="text-gray-800 mb-2 font-bold">
-                Edit Homeless User Profile
-              </Typography>
-              <Typography variant="small" className="text-gray-500">
-                Update the homeless user details below
-              </Typography>
+      {error && (
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+          <span className="font-medium flex-1">{error}</span>
+          <button onClick={() => setError("")} className="text-rose-600 p-1">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5">
+          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <span className="font-semibold flex-1">Beneficiary updated successfully! Redirecting...</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="max-w-[1040px] mx-auto space-y-5">
+        {/* Profile Card & Sponsor */}
+        <div className="bg-white rounded-2xl border border-[#E7ECF2] p-5 sm:p-6 shadow-card space-y-4">
+          <div className="pb-3 border-b border-[#E7ECF2] flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-[#2878E5]" />
+            <h2 className="text-sm font-bold text-[#172033]">Identity & Sponsorship</h2>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+            <input
+              type="file"
+              id="edit-profile-pic"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+            />
+            <label htmlFor="edit-profile-pic" className="cursor-pointer relative flex-shrink-0">
+              {profilePicturePreview ? (
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E7ECF2] bg-white">
+                  <img src={profilePicturePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeProfilePicture();
+                    }}
+                    className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-[#2878E5]/40 hover:border-[#2878E5] bg-white flex flex-col items-center justify-center text-[#2878E5]">
+                  <UploadCloud className="w-6 h-6 mb-1 text-[#2878E5]" />
+                  <span className="text-[10px] font-bold">Photo</span>
+                </div>
+              )}
+            </label>
+            <div className="flex-1 text-center sm:text-left space-y-1">
+              <h3 className="text-xs font-bold text-[#172033]">Profile Photo</h3>
+              <p className="text-xs text-[#68778D]">Click the box to update portrait photo (JPG, PNG &lt; 5MB)</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="block text-xs font-bold text-[#172033]">
+                Sponsor Organization <span className="text-rose-500">*</span>
+              </label>
+              <select
+                name="organizationId"
+                value={formData.organizationId}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              >
+                <option value="">Select Organization</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name || org.orgName} ({org.city || "National"})
+                  </option>
+                ))}
+              </select>
             </div>
 
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Username</label>
+              <input
+                type="text"
+                disabled
+                value={formData.username}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-100 border border-[#E7ECF2] rounded-xl text-slate-500 cursor-not-allowed"
+              />
+            </div>
 
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Retainer Cut % (Max 30%)</label>
+              <input
+                type="text"
+                name="organizationCutPercentage"
+                value={formData.organizationCutPercentage}
+                onChange={handleChange}
+                placeholder="e.g. 10"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Account Credentials Section */}
-              <div className="backdrop-blur-sm bg-white/60 rounded-xl border border-white/80 overflow-hidden">
+        {/* Personal Details */}
+        <div className="bg-white rounded-2xl border border-[#E7ECF2] p-5 sm:p-6 shadow-card space-y-4">
+          <div className="pb-3 border-b border-[#E7ECF2] flex items-center gap-2">
+            <User className="w-4 h-4 text-[#2878E5]" />
+            <h2 className="text-sm font-bold text-[#172033]">Personal & Contact Details</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="block text-xs font-bold text-[#172033]">Full Legal Name</label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Age</label>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Gender</label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Non-Binary">Non-Binary</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Contact Phone</label>
+              <input
+                type="tel"
+                name="contactPhone"
+                value={formData.contactPhone}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Contact Email</label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={formData.contactEmail}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="block text-xs font-bold text-[#172033]">Bio / Public Story</label>
+              <textarea
+                name="bio"
+                rows={3}
+                value={formData.bio}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Skills & Background */}
+        <div className="bg-white rounded-2xl border border-[#E7ECF2] p-5 sm:p-6 shadow-card space-y-4">
+          <div className="pb-3 border-b border-[#E7ECF2] flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-[#2878E5]" />
+            <h2 className="text-sm font-bold text-[#172033]">Skills & Background</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-[#172033]">Skills & Competencies</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {SKILLS_OPTIONS.map((skill) => {
+                  const isSelected = formData.skillset.includes(skill);
+                  return (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => handleToggleArrayItem("skillset", skill)}
+                      className={`p-2 rounded-lg border text-xs font-medium text-left truncate transition-all ${
+                        isSelected
+                          ? "bg-[#EAF3FF] border-[#2878E5] text-[#2878E5] font-semibold"
+                          : "bg-white border-[#E7ECF2] text-[#68778D] hover:bg-slate-50"
+                      }`}
+                    >
+                      {skill}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Work Experience</label>
+              <textarea
+                name="experience"
+                rows={2}
+                value={formData.experience}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Medical / Accommodations</label>
+              <textarea
+                name="healthConditions"
+                rows={2}
+                value={formData.healthConditions}
+                onChange={handleChange}
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Security / Password */}
+        <div className="bg-white rounded-2xl border border-[#E7ECF2] p-5 sm:p-6 shadow-card space-y-4">
+          <div className="pb-3 border-b border-[#E7ECF2] flex items-center gap-2">
+            <Lock className="w-4 h-4 text-[#2878E5]" />
+            <h2 className="text-sm font-bold text-[#172033]">Password Update (Optional)</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">New Password</label>
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+                />
                 <button
                   type="button"
-                  onClick={() => toggleSection("account")}
-                  className="w-full p-5 flex items-center justify-between hover:bg-white/40"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                      <KeyIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <Typography variant="h6" className="text-gray-800 font-semibold">
-                        Account Credentials
-                      </Typography>
-                      <Typography variant="small" className="text-gray-500 text-xs mt-0.5">
-                        Main email and password for login
-                      </Typography>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${openSections.account ? "rotate-180" : ""
-                      }`}
-                  />
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-
-                {openSections.account && (
-                  <div className="p-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="username" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <UserIcon className="w-4 h-4 text-gray-400" />
-                        Username
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Input
-                            id="username"
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            readOnly
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10 cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Username (read-only)
-                      </Typography>
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="email" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <EnvelopeIcon className="w-4 h-4 text-gray-400" />
-                        Email Address
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.email
-                          ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                          : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                          }`} />
-                        <div className="relative">
-                          <Input
-                            id="email"
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="homeless@example.com"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                      {errors.email && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.email}
-                        </Typography>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="password" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <LockClosedIcon className="w-4 h-4 text-gray-400" />
-                        Current Password
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Input
-                            id="password"
-                            type="text"
-                            name="password"
-                            value={formData.password}
-                            readOnly
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10 cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Current password (read-only)
-                      </Typography>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <LockClosedIcon className="w-4 h-4 text-gray-400" />
-                        New Password
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.newPassword
-                          ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                          : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                          }`} />
-                        <div className="relative">
-                          <Input
-                            id="newPassword"
-                            type={showNewPassword ? "text" : "password"}
-                            name="newPassword"
-                            value={formData.newPassword}
-                            onChange={handleChange}
-                            placeholder="Enter new password"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0 pr-10" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 text-gray-500 hover:text-gray-700 focus:outline-none"
-                          >
-                            {showNewPassword ? (
-                              <EyeSlashIcon className="h-5 w-5" />
-                            ) : (
-                              <EyeIcon className="h-5 w-5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      {errors.newPassword && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.newPassword}
-                        </Typography>
-                      )}
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Minimum 8 characters
-                      </Typography>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <LockClosedIcon className="w-4 h-4 text-gray-400" />
-                        Confirm New Password
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.confirmPassword
-                          ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                          : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                          }`} />
-                        <div className="relative">
-                          <Input
-                            id="confirmPassword"
-                            type={showConfirmPassword ? "text" : "password"}
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            placeholder="Confirm new password"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0 pr-10" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 text-gray-500 hover:text-gray-700 focus:outline-none"
-                          >
-                            {showConfirmPassword ? (
-                              <EyeSlashIcon className="h-5 w-5" />
-                            ) : (
-                              <EyeIcon className="h-5 w-5" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      {errors.confirmPassword && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.confirmPassword}
-                        </Typography>
-                      )}
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Re-enter new password to confirm
-                      </Typography>
-                    </div>
-                  </div>
-                )}
               </div>
+              {errors.newPassword && <p className="text-[11px] text-rose-500">{errors.newPassword}</p>}
+            </div>
 
-              {/* Personal Information Section */}
-              <div className="backdrop-blur-sm bg-white/60 rounded-xl border border-white/80 overflow-hidden">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-[#172033]">Confirm New Password</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:outline-none"
+                />
                 <button
                   type="button"
-                  onClick={() => toggleSection("personal")}
-                  className="w-full p-5 flex items-center justify-between hover:bg-white/40"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                      <UserIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <Typography variant="h6" className="text-gray-800 font-semibold">
-                        Personal Information
-                      </Typography>
-                      <Typography variant="small" className="text-gray-500 text-xs mt-0.5">
-                        Basic personal details
-                      </Typography>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${openSections.personal ? "rotate-180" : ""
-                      }`}
-                  />
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-
-                {openSections.personal && (
-                  <div className="p-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Organization Field */}
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="organizationId" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <BuildingOffice2Icon className="w-4 h-4 text-gray-400" />
-                        Organization <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.organizationId
-                          ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                          : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                          }`} />
-                        <div className="relative">
-                          <select
-                            key={`org-select-${formData.organizationId || 'empty'}-${organizations.length}`}
-                            id="organizationId"
-                            name="organizationId"
-                            value={formData.organizationId || ""}
-                            onChange={handleChange}
-                            className="relative w-full px-3 py-2 bg-transparent text-gray-900 border-none outline-none focus:outline-none z-10 appearance-none cursor-pointer"
-                            style={{ paddingRight: '2.5rem' }}
-                          >
-                            {loadingOrgs ? (
-                              <option value="">Loading organizations...</option>
-                            ) : organizations.length === 0 ? (
-                              <option value="">No organizations available</option>
-                            ) : (
-                              <>
-                                <option value="">Select an organization</option>
-                                {organizations.map((org) => (
-                                  <option key={String(org.id)} value={String(org.id)}>
-                                    {org.name || org.orgName} {org.city && org.state ? `(${org.city}, ${org.state})` : ''}
-                                  </option>
-                                ))}
-                              </>
-                            )}
-                          </select>
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                            <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                          </div>
-                        </div>
-                      </div>
-                      {errors.organizationId && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.organizationId}
-                        </Typography>
-                      )}
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Select the organization this homeless individual belongs to
-                      </Typography>
-                    </div>
-
-                    {/* Profile Picture Section */}
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <PhotoIcon className="w-4 h-4 text-gray-400" />
-                        Profile Picture
-                      </label>
-                      <div className="flex items-start gap-4">
-                        {/* Current/Preview Profile Picture */}
-                        {(profilePicturePreview || profilePicture) && (
-                          <div className="relative">
-                            <img
-                              src={profilePicturePreview || profilePicture}
-                              alt="Profile"
-                              className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                            />
-                            {profilePictureFile && (
-                              <button
-                                type="button"
-                                onClick={handleRemoveProfilePicture}
-                                className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                              >
-                                <XMarkIcon className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Upload Button */}
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            id="profilePicture"
-                            accept="image/*"
-                            onChange={handleProfilePictureChange}
-                            className="hidden"
-                          />
-                          <label
-                            htmlFor="profilePicture"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 cursor-pointer transition-colors"
-                          >
-                            <PhotoIcon className="w-5 h-5" />
-                            <span className="text-sm font-medium">
-                              {profilePictureFile ? "Change Picture" : profilePicture ? "Change Picture" : "Upload Picture"}
-                            </span>
-                          </label>
-                          <Typography variant="small" className="text-xs text-gray-400 mt-2">
-                            Supported formats: JPG, PNG, GIF, WEBP. Max file size: 5MB
-                          </Typography>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700">
-                        Full Name <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.fullName
-                          ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                          : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                          }`} />
-                        <div className="relative">
-                          <Input
-                            id="fullName"
-                            type="text"
-                            name="fullName"
-                            value={formData.fullName}
-                            onChange={handleChange}
-                            placeholder="Enter full name"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                      {errors.fullName && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.fullName}
-                        </Typography>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="organizationCutPercentage" className="block text-sm font-semibold text-gray-700">
-                        Organization Cut (%)
-                      </label>
-                      <div className="flex items-center gap-2" style={{ maxWidth: '9rem' }}>
-                        <div className="relative rounded-lg group flex-1">
-                          <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.organizationCutPercentage
-                            ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                            : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                            }`} />
-                          <div className="relative">
-                            <Input
-                              id="organizationCutPercentage"
-                              type="text"
-                              name="organizationCutPercentage"
-                              value={formData.organizationCutPercentage}
-                              onChange={handleChange}
-                              placeholder="10"
-                              labelProps={{ className: "hidden" }}
-                              containerProps={{ className: "min-w-0" }}
-                              className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                            />
-                          </div>
-                        </div>
-                        <span className="text-sm text-gray-700 font-medium">%</span>
-                      </div>
-                      {errors.organizationCutPercentage && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.organizationCutPercentage}
-                        </Typography>
-                      )}
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Optional: Commission percentage (0-100)
-                      </Typography>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="age" className="block text-sm font-semibold text-gray-700">
-                        Age <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className={`absolute inset-0 rounded-lg border transition-all duration-300 ease-in-out pointer-events-none ${errors.age
-                          ? "border-red-300 bg-white/90 shadow-sm group-focus-within:border-red-500 group-focus-within:ring-2 group-focus-within:ring-red-500/30"
-                          : "border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30"
-                          }`} />
-                        <div className="relative">
-                          <Input
-                            id="age"
-                            type="number"
-                            name="age"
-                            value={formData.age}
-                            onChange={handleChange}
-                            placeholder="Enter age"
-                            min="10"
-                            max="90"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                      {errors.age && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.age}
-                        </Typography>
-                      )}
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Age must be between 10 and 90
-                      </Typography>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Gender <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex flex-col gap-2">
-                        {["Male", "Female", "Prefer not to say"].map((gender) => (
-                          <label key={gender} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                            <input
-                              type="radio"
-                              name="gender"
-                              value={gender}
-                              checked={formData.gender === gender}
-                              onChange={handleGenderChange}
-                              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                            />
-                            <Typography variant="small" className="text-gray-700">
-                              {gender}
-                            </Typography>
-                          </label>
-                        ))}
-                      </div>
-                      {errors.gender && (
-                        <Typography variant="small" color="red" className="text-xs mt-1">
-                          {errors.gender}
-                        </Typography>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="bio" className="block text-sm font-semibold text-gray-700">
-                        Short Bio / Description
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Textarea
-                            id="bio"
-                            name="bio"
-                            value={formData.bio}
-                            onChange={handleChange}
-                            placeholder="Tell us about your background, needs, or abilities..."
-                            rows={4}
-                            variant="static"
-                            textareaProps={{ className: "!border-none" }}
-                            className="relative w-full p-2 bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none !border-none z-10"
-                          />
-                        </div>
-                      </div>
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Optional: Share your story, skills, or what you need help with
-                      </Typography>
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {/* Skills & Experience Section */}
-              <div className="backdrop-blur-sm bg-white/60 rounded-xl border border-white/80 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("skills")}
-                  className="w-full p-5 flex items-center justify-between hover:bg-white/40"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white">
-                      <BriefcaseIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <Typography variant="h6" className="text-gray-800 font-semibold">
-                        Skills & Experience
-                      </Typography>
-                      <Typography variant="small" className="text-gray-500 text-xs mt-0.5">
-                        Your skills and work experience
-                      </Typography>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${openSections.skills ? "rotate-180" : ""
-                      }`}
-                  />
-                </button>
-
-                {openSections.skills && (
-                  <div className="p-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Skillset
-                      </label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {SKILLS_OPTIONS.map((skill) => (
-                          <label key={skill} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/50 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={formData.skillset.includes(skill)}
-                              onChange={() => handleMultiSelect("skillset", skill)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <Typography variant="small" className="text-gray-700">
-                              {skill}
-                            </Typography>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="experience" className="block text-sm font-semibold text-gray-700">
-                        Experience
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Input
-                            id="experience"
-                            type="text"
-                            name="experience"
-                            value={formData.experience}
-                            onChange={handleChange}
-                            placeholder="e.g., 5 years in construction, or describe your experience"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        Optional: Years of experience or description
-                      </Typography>
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Languages Known
-                      </label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {LANGUAGES_OPTIONS.map((language) => (
-                          <label key={language} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-white/50 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={formData.languages.includes(language)}
-                              onChange={() => handleMultiSelect("languages", language)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <Typography variant="small" className="text-gray-700">
-                              {language}
-                            </Typography>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="healthConditions" className="block text-sm font-semibold text-gray-700">
-                        Health Conditions (Optional)
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Textarea
-                            id="healthConditions"
-                            name="healthConditions"
-                            value={formData.healthConditions}
-                            onChange={handleChange}
-                            placeholder="Any health conditions or special needs..."
-                            rows={3}
-                            variant="static"
-                            textareaProps={{ className: "!border-none" }}
-                            className="relative w-full p-2 bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none !border-none z-10"
-                          />
-                        </div>
-                      </div>
-                      <Typography variant="small" className="text-xs text-gray-400">
-                        This information helps NGOs provide better care
-                      </Typography>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Location & Contact Section */}
-              <div className="backdrop-blur-sm bg-white/60 rounded-xl border border-white/80 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("location")}
-                  className="w-full p-5 flex items-center justify-between hover:bg-white/40"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-teal-600 text-white">
-                      <MapPinIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <Typography variant="h6" className="text-gray-800 font-semibold">
-                        Location & Contact
-                      </Typography>
-                      <Typography variant="small" className="text-gray-500 text-xs mt-0.5">
-                        Location and contact information
-                      </Typography>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${openSections.location ? "rotate-180" : ""
-                      }`}
-                  />
-                </button>
-
-                {openSections.location && (
-                  <div className="p-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-5">
-
-
-                    <div className="md:col-span-2 space-y-2">
-                      <label htmlFor="address" className="block text-sm font-semibold text-gray-700">
-                        Address
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Input
-                            id="address"
-                            type="text"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            placeholder="Enter address"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="contactPhone" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <PhoneIcon className="w-4 h-4 text-gray-400" />
-                        Phone Number
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Input
-                            id="contactPhone"
-                            type="tel"
-                            name="contactPhone"
-                            value={formData.contactPhone}
-                            onChange={handleChange}
-                            placeholder="(555) 123-4567"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="contactEmail" className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <EnvelopeIcon className="w-4 h-4 text-gray-400" />
-                        Email Address
-                      </label>
-                      <div className="relative rounded-lg group">
-                        <div className="absolute inset-0 rounded-lg border border-gray-400 bg-white/90 shadow-sm group-focus-within:border-blue-500 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 transition-all duration-300 ease-in-out pointer-events-none" />
-                        <div className="relative">
-                          <Input
-                            id="contactEmail"
-                            type="email"
-                            name="contactEmail"
-                            value={formData.contactEmail}
-                            onChange={handleChange}
-                            placeholder="email@example.com"
-                            labelProps={{ className: "hidden" }}
-                            containerProps={{ className: "min-w-0" }}
-                            className="relative bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none focus:shadow-none border-none z-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {success && (
-                <Alert color="green" className="mb-6">
-                  <div className="flex items-center gap-2">
-                    <CheckCircleIcon className="h-5 w-5" />
-                    Homeless user updated successfully! Redirecting...
-                  </div>
-                </Alert>
+              {errors.confirmPassword && (
+                <p className="text-[11px] text-rose-500">{errors.confirmPassword}</p>
               )}
+            </div>
+          </div>
+        </div>
 
-              {error && (
-                <Alert color="red" className="mb-6">
-                  {error}
-                </Alert>
-              )}
-
-
-              {/* Submit Button */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-end pt-6">
-                <Button
-                  type="button"
-                  variant="outlined"
-                  color="gray"
-                  onClick={() => navigate(-1)}
-                  className="normal-case"
-                  disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="normal-case bg-gradient-to-r from-blue-600 to-indigo-600"
-                  disabled={loading}
-                >
-                  {loading ? "Updating..." : "Update Homeless User"}
-                </Button>
-              </div>
-            </form>
-
-            {/* Success/Error Messages */}
-
-          </CardBody>
-        </Card>
-      </div>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/homeless")}
+            className="px-5 py-2.5 rounded-xl border border-[#E7ECF2] text-xs font-semibold text-[#68778D] hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2.5 rounded-xl bg-[#2878E5] hover:bg-[#1d6cd4] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
+          >
+            {loading ? "Saving Changes..." : "Save Beneficiary Changes"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
 
+export default EditHomeless;
