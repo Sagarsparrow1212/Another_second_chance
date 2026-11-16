@@ -34,7 +34,43 @@ class NotificationService {
     }
 
     /**
-     * Send a notification to multiple devices (Multicast) and save to User model
+     * Save a notification to the User model
+     * @param {string} userId - The User ID to save notification to
+     * @param {string} title - Notification title
+     * @param {string} body - Notification body
+     * @param {string} type - Notification type (chat, system, etc.)
+     * @param {object} data - Optional data payload
+     */
+    static async saveNotification(userId, title, body, type = 'system', data = {}) {
+        if (!userId) {
+            console.warn('NotificationService: No userId provided for saving notification');
+            return null;
+        }
+
+        const User = require('../models/User');
+        try {
+            const result = await User.findByIdAndUpdate(userId, {
+                $push: {
+                    notifications: {
+                        title,
+                        message: body,
+                        type,
+                        data,
+                        isRead: false,
+                        createdAt: new Date()
+                    }
+                }
+            }, { new: true });
+            console.log(`Notification saved to user ${userId}`);
+            return result;
+        } catch (dbError) {
+            console.error(`Error saving notification to user ${userId}:`, dbError);
+            throw dbError;
+        }
+    }
+
+    /**
+     * Send a notification to multiple devices (Multicast) and optionally save to User model
      * @param {Array<string>} tokens - Array of FCM device tokens
      * @param {string} title - Notification title
      * @param {string} body - Notification body
@@ -59,24 +95,7 @@ class NotificationService {
         try {
             // Save to User model if userId is provided
             if (userId) {
-                const User = require('../models/User');
-                try {
-                    await User.findByIdAndUpdate(userId, {
-                        $push: {
-                            notifications: {
-                                title,
-                                message: body,
-                                type: data.type || 'system',
-                                data: data,
-                                isRead: false,
-                                createdAt: new Date()
-                            }
-                        }
-                    });
-                    console.log(`Notification saved to user ${userId}`);
-                } catch (dbError) {
-                    console.error(`Error saving notification to user ${userId}:`, dbError);
-                }
+                await this.saveNotification(userId, title, body, data.type || 'system', data);
             }
 
             // Using sendEachForMulticast as sendMulticast is deprecated/removed in v12+

@@ -49,7 +49,7 @@ export function MerchantDetails() {
   const [merchant, setMerchant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   const [activeTab, setActiveTab] = useState("basic");
   const [jobs, setJobs] = useState([]);
   const [jobsLoading, setJobsLoading] = useState(false);
@@ -113,11 +113,11 @@ export function MerchantDetails() {
       if (id) {
         try {
           setJobsLoading(true);
-          
+
           // Get token from localStorage
           const sessionData = localStorage.getItem('auth_session');
           const token = sessionData ? JSON.parse(sessionData).token : null;
-          
+
           const response = await fetch(`${API_BASE_URL_V1}/merchants/${id}/jobs`, {
             headers: {
               'Content-Type': 'application/json',
@@ -154,11 +154,11 @@ export function MerchantDetails() {
       if (activeTab === "jobs" && id) {
         try {
           setJobsLoading(true);
-          
+
           // Get token from localStorage
           const sessionData = localStorage.getItem('auth_session');
           const token = sessionData ? JSON.parse(sessionData).token : null;
-          
+
           const response = await fetch(`${API_BASE_URL_V1}/merchants/${id}/jobs`, {
             headers: {
               'Content-Type': 'application/json',
@@ -255,8 +255,8 @@ export function MerchantDetails() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
           <Typography color="red" className="mb-4">{error}</Typography>
-          <Button 
-            onClick={() => navigate("/dashboard/merchants")} 
+          <Button
+            onClick={() => navigate("/dashboard/merchants")}
             className="bg-blue-600 text-white"
           >
             Back to Merchants
@@ -271,8 +271,8 @@ export function MerchantDetails() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
           <Typography color="blue-gray" className="mb-4">Merchant not found</Typography>
-          <Button 
-            onClick={() => navigate("/dashboard/merchants")} 
+          <Button
+            onClick={() => navigate("/dashboard/merchants")}
             className="bg-blue-600 text-white"
           >
             Back to Merchants
@@ -577,7 +577,7 @@ export function MerchantDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent",  }}>
+      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent", }}>
         {/* Header Section */}
         <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -595,12 +595,12 @@ export function MerchantDetails() {
                   {merchant.businessName}
                 </Typography>
                 <Typography variant="small" className="text-gray-500 mt-1">
-                  Merchant Details  
+                  Merchant Details
                 </Typography>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              
+
               <Button
                 size="sm"
                 variant="outlined"
@@ -634,13 +634,11 @@ export function MerchantDetails() {
                       className="px-2 sm:px-3 md:px-4 py-3 font-semibold text-xs sm:text-sm md:text-base transition-all whitespace-nowrap"
                     >
                       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 inline-block ${
-                          isActive ? "text-blue-600" : "text-gray-500"
-                        }`} />
-                        <span className={`${
-                          isActive ? "text-blue-600" : "text-gray-600"
-                        }`}>
-                          <span className="hidden sm:inline">{label==="Jobs" ? label + " (" + jobs.length + ")" : label}</span>
+                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 inline-block ${isActive ? "text-blue-600" : "text-gray-500"
+                          }`} />
+                        <span className={`${isActive ? "text-blue-600" : "text-gray-600"
+                          }`}>
+                          <span className="hidden sm:inline">{label === "Jobs" ? label + " (" + jobs.length + ")" : label}</span>
                           <span className="sm:hidden">
                             {value === "basic" ? "Basic" : value === "address" ? "Address" : value === "documents" ? "Docs" : "Jobs"}
                           </span>
@@ -707,7 +705,7 @@ export function MerchantDetails() {
                         <div className="p-1.5 bg-blue-100 rounded-lg">
                           <EnvelopeIcon className="w-4 h-4 text-blue-600" />
                         </div>
-                        <a 
+                        <a
                           href={`mailto:${merchant.email}`}
                           className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer font-semibold text-lg"
                         >
@@ -739,7 +737,7 @@ export function MerchantDetails() {
 
                   {/* Account Status */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-200">
-                    
+
                     <div className="p-4 rounded-lg bg-gray-50">
                       <label className="block text-gray-500 text-sm mb-2 font-medium">Account Status</label>
                       <div className="flex items-center gap-2">
@@ -809,7 +807,7 @@ export function MerchantDetails() {
                         <div className="flex items-center gap-2 mb-3">
                           <IdentificationIcon className="w-5 h-5 text-gray-600" />
                           <Typography variant="h6" className="text-gray-900 font-semibold text-sm">
-                            GST Certificate
+                            Certificate of Incorporation
                           </Typography>
                         </div>
                         <a
@@ -822,6 +820,7 @@ export function MerchantDetails() {
                         </a>
                       </div>
                     )}
+                    {/* 
                     {merchant.businessLicense && (
                       <div className="p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition-all">
                         <div className="flex items-center gap-2 mb-3">
@@ -839,13 +838,15 @@ export function MerchantDetails() {
                           View Document
                         </a>
                       </div>
-                    )}
+                    )} 
+                     
+                     */}
                     {merchant.photoId && (
                       <div className="p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition-all">
                         <div className="flex items-center gap-2 mb-3">
                           <IdentificationIcon className="w-5 h-5 text-gray-600" />
                           <Typography variant="h6" className="text-gray-900 font-semibold text-sm">
-                            Photo ID
+                            ID Card(State ID Card)
                           </Typography>
                         </div>
                         <a
@@ -955,8 +956,8 @@ export function MerchantDetails() {
                                     job.status === "active"
                                       ? "green"
                                       : job.status === "closed"
-                                      ? "red"
-                                      : "amber"
+                                        ? "red"
+                                        : "amber"
                                   }
                                 />
                               </div>
@@ -1048,9 +1049,9 @@ export function MerchantDetails() {
       </div>
 
       {/* Job Form Dialog */}
-      <Dialog 
-        open={showJobDialog} 
-        handler={() => setShowJobDialog(false)} 
+      <Dialog
+        open={showJobDialog}
+        handler={() => setShowJobDialog(false)}
         size="lg"
         className="sm:max-w-[600px] max-w-[95vw]"
       >
@@ -1183,7 +1184,7 @@ export function MerchantDetails() {
               )}
             </div>
 
-            
+
 
             <div>
               <Select
@@ -1225,8 +1226,8 @@ export function MerchantDetails() {
             {jobSubmitLoading
               ? "Processing..."
               : editingJob
-              ? "Update Job"
-              : "Create Job"}
+                ? "Update Job"
+                : "Create Job"}
           </Button>
         </DialogFooter>
       </Dialog>

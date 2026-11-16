@@ -637,6 +637,64 @@ const getJobById = async (req, res) => {
     }
 };
 
+/**
+ * @desc    Reject a job application
+ * @route   PATCH /api/v1/applications/:id/reject
+ * @access  Private (Merchant or Admin)
+ */
+const rejectApplication = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find the application
+        const application = await JobApplication.findById(id);
+
+        if (!application) {
+            return res.status(404).json({
+                success: false,
+                message: 'Application not found',
+            });
+        }
+
+        // Authorization check
+        // If the user is a merchant, they should own the job associated with the application
+        if (req.user.role === 'merchant') {
+            const job = await Job.findById(application.jobId);
+            const merchant = await Merchant.findOne({ userId: req.user._id });
+
+            if (!job || !merchant || job.merchantId.toString() !== merchant._id.toString()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Not authorized to reject this application',
+                });
+            }
+        } else if (req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to reject applications',
+            });
+        }
+
+        // Update application status
+        application.status = 'rejected';
+        await application.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Application rejected successfully',
+            data: application
+        });
+
+    } catch (error) {
+        console.error('Reject application error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while rejecting application',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+        });
+    }
+};
+
 module.exports = {
     createJob,
     getMerchantJobs,
@@ -646,5 +704,6 @@ module.exports = {
     deleteJob,
     applyForJob,
     getHomelessApplications,
+    rejectApplication,
 };
 

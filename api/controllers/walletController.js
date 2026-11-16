@@ -77,16 +77,23 @@ const getWalletTransactions = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Wallet not found.' });
         }
 
-        const { page = 1, limit = 10, type, startDate, endDate } = req.query;
+        const { page = 1, limit = 10, type, filter, startDate, endDate } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const skip = (pageNum - 1) * limitNum;
-
+        
         const query = { walletId: wallet._id };
 
-        if (type && ['CREDIT', 'DEBIT'].includes(type)) {
+        // Handle 'filter' parameter (withdraw or all)
+        if (filter === 'withdraw') {
+            query.type = 'DEBIT';
+        } else if (filter === 'all') {
+            // No type filter needed for 'all'
+        } else if (type && ['CREDIT', 'DEBIT'].includes(type)) {
+            // Keep support for explicit 'type' if 'filter' isn't provided or isn't 'all'/'withdraw'
             query.type = type;
         }
+
 
         if (startDate || endDate) {
             query.createdAt = {};

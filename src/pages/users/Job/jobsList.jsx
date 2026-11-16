@@ -367,7 +367,7 @@ export function JobsList() {
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* <div className="flex items-center gap-2 flex-wrap">
                 <Typography variant="small" className="text-gray-700 font-medium">
                   Filter:
                 </Typography>
@@ -407,7 +407,7 @@ export function JobsList() {
                 >
                   Closed
                 </Button>
-              </div>
+              </div> */}
             </div>
           </CardBody>
         </Card>
@@ -472,7 +472,7 @@ export function JobsList() {
                     <table className="w-full min-w-[800px] table-auto">
                       <thead>
                         <tr>
-                          {["Job Title", "Merchant Name", "Created At", "Status", "Actions"].map((el) => (
+                          {["Job Title", "Merchant Name", "Created At", "Actions"].map((el) => (
                             <th
                               key={el}
                               className="border-b border-blue-gray-400 py-3 px-5 text-left"
@@ -490,8 +490,8 @@ export function JobsList() {
                       <tbody>
                         {paginatedJobs.map((job, key) => {
                           const className = `py-3 px-5 ${key === paginatedJobs.length - 1
-                              ? ""
-                              : "border-b border-blue-gray-200"
+                            ? ""
+                            : "border-b border-blue-gray-200"
                             }`;
 
                           const isMenuOpen = openMenuId === job._id;
@@ -520,7 +520,7 @@ export function JobsList() {
                                   {formatDate(job.createdAt)}
                                 </Typography>
                               </td>
-                              <td className={className}>
+                              {/* <td className={className}>
                                 <div className="flex items-center gap-2">
                                   <div className="w-[120px]">
                                     <Select
@@ -567,7 +567,7 @@ export function JobsList() {
                                     </div>
                                   )}
                                 </div>
-                              </td>
+                              </td> */}
                               <td className={className}>
                                 <div className="flex items-center gap-2">
                                   <div
@@ -883,8 +883,8 @@ export function JobsList() {
                                 size="sm"
                                 onClick={() => handlePageChange(page)}
                                 className={`min-w-[32px] ${pagination.currentPage === page
-                                    ? "bg-blue-gray-900 text-white"
-                                    : "text-blue-gray-600"
+                                  ? "bg-blue-gray-900 text-white"
+                                  : "text-blue-gray-600"
                                   }`}
                               >
                                 {page}

@@ -268,7 +268,7 @@ export function JobDetails() {
                 {job.title}
               </Typography>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <Select
                     value={job.status}
                     onChange={handleStatusChange}
@@ -309,7 +309,7 @@ export function JobDetails() {
                       </svg>
                     </div>
                   )}
-                </div>
+                </div> */}
                 <Typography variant="small" className="text-gray-500">
                   Posted {formatDate(job.createdAt)}
                 </Typography>
@@ -427,7 +427,7 @@ export function JobDetails() {
             </Card>
 
             {/* Job Information */}
-            <Card>
+            {/* <Card>
               <CardBody className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <CalendarIcon className="w-5 h-5 text-gray-600" />
@@ -503,7 +503,7 @@ export function JobDetails() {
                   )}
                 </div>
               </CardBody>
-            </Card>
+            </Card> */}
 
             {/* Apply Button Section */}
             <Card>

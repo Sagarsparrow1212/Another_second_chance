@@ -349,20 +349,13 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Update FCM token if provided
+    // Update FCM token if provided (Replace existing tokens)
     if (req.body.fcmToken) {
       const fcmToken = req.body.fcmToken;
-      console.log(`[Login] Updating FCM token for user ${user._id}`);
+      console.log(`[Login] Replacing FCM tokens for user ${user._id} with new token`);
 
-      // Add token to array if not already present (avoid duplicates)
-      if (!user.fcmTokens) {
-        user.fcmTokens = [];
-      }
-
-      if (!user.fcmTokens.includes(fcmToken)) {
-        user.fcmTokens.push(fcmToken);
-        await user.save();
-      }
+      user.fcmTokens = [fcmToken];
+      await user.save();
     }
 
     // Step 3: Check if user is active

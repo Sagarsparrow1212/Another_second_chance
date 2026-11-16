@@ -206,7 +206,7 @@ io.use(async (socket, next) => {
     if (!user || !user.isActive) {
       return next(new Error('Authentication error: Invalid or inactive user'));
     }
-
+    
     socket.userId = user._id.toString();
     socket.userRole = user.role;
     next();

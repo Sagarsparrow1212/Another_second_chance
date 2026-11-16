@@ -18,72 +18,59 @@ const { creditWallet, debitWallet } = require('../services/walletService');
  * @route   POST /api/v1/payments/create-payment-intent
  * @access  Private (should be protected in production)
  */
+const calculateStripeFee = (amount) => {
+  const percentage = 0.029;
+  const fixed = 0.30;
+
+  return (amount * percentage) + fixed;
+};
+
 const createPaymentIntent = async (req, res) => {
   try {
     const { amount, currency = 'usd', metadata, organization_id } = req.body;
-    console.log('organization_id', organization_id);
-    // find homeless user to organization 
+
     const homeless = await Homeless.findById(organization_id);
-    console.log('homeless', homeless);
-
     if (!homeless) {
-      return res.status(404).json({
-        success: false,
-        message: 'Homeless user not found',
-      });
+      return res.status(404).json({ success: false, message: 'Homeless user not found' });
     }
+
     const organization = await Organization.findById(homeless.organizationId);
-    console.log('organization', organization);
     if (!organization) {
-      return res.status(404).json({
-        success: false,
-        message: 'Organization not found',
-      });
-    }
-    if (!amount) {
-      return res.status(400).json({
-        success: false,
-        message: 'Amount is required',
-      });
+      return res.status(404).json({ success: false, message: 'Organization not found' });
     }
 
-    // Validate amount is a positive number
-    if (isNaN(amount) || amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Amount must be a positive number',
-      });
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid amount' });
     }
 
-    // Calculate org's cut (platform keeps this; org Stripe account gets the rest)
-    const cutPercentage = homeless.organizationCutPercentage || 0;
-    const applicationFeeAmount = 0;
+    // 💰 Calculate Stripe fee
+    const stripeFee = calculateStripeFee(amount);
 
-    // Create payment intent
-    const paymentIntentParams = {
-      amount: Math.round(amount * 100), // Convert to cents (smallest currency unit)
+    // 💰 Convert to cents
+    const totalAmountCents = Math.round(amount * 100);
+    const feeCents = Math.round(stripeFee * 100);
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalAmountCents,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true },
 
       transfer_data: {
-        destination: organization.stripeAccountId, // homeless share goes to org Stripe account
-
+        destination: organization.stripeAccountId,
       },
+      
+      // 💥 THIS is key: platform keeps Stripe fee
+      application_fee_amount: feeCents,
+
       metadata: metadata || {},
-    };
-
-    // Only set application_fee_amount if org takes a cut
-    if (applicationFeeAmount >= 0) {
-      paymentIntentParams.application_fee_amount = applicationFeeAmount;
-    }
-
-    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+    });
 
     res.status(200).json({
       success: true,
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     });
+
   } catch (error) {
     console.error('Create payment intent error:', error);
     res.status(500).json({
@@ -610,7 +597,7 @@ const getConnectBalance = async (req, res) => {
         message: 'Account ID is required',
       });
     }
-    
+
     const balance = await stripe.balance.retrieve({
       stripeAccount: accountId,
     });

@@ -15,7 +15,7 @@ const getNotifications = async (req, res) => {
                 success: false,
                 message: 'User not found'
             });
-        }
+        } 
 
         // Sort notifications by newest first
         const notifications = user.notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

@@ -267,11 +267,11 @@ export function HomelessDetails() {
       value: "additional",
       icon: MapPinIcon,
     },
-    {
-      label: "Documents",
-      value: "documents",
-      icon: DocumentTextIcon,
-    },
+    // {
+    //   label: "Documents",
+    //   value: "documents",
+    //   icon: DocumentTextIcon,
+    // },
     {
       label: "Donations",
       value: "donations",
@@ -735,7 +735,7 @@ export function HomelessDetails() {
               </TabPanel>
 
               {/* Documents Tab */}
-              <TabPanel value="documents" className="p-0">
+              {/* <TabPanel value="documents" className="p-0">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-3 bg-indigo-100 rounded-lg">
                     <DocumentTextIcon className="w-6 h-6 text-indigo-600" />
@@ -793,7 +793,7 @@ export function HomelessDetails() {
                     </Typography>
                   </div>
                 )}
-              </TabPanel>
+              </TabPanel> */}
 
               {/* Donations Tab */}
               <TabPanel value="donations" className="p-0">

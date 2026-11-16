@@ -662,17 +662,31 @@ const sendMessage = async (req, res) => {
           if (recipientUser) {
             console.log(`[Chat Notification] Found recipient user. Tokens: ${recipientUser.fcmTokens ? recipientUser.fcmTokens.length : 0}`);
 
+            // 1. Always save the notification to the database first
+            const notificationTitle = `New message from ${senderName}`;
+            const notificationBody = text.length > 50 ? text.substring(0, 47) + '...' : text;
+            const notificationData = {
+              type: 'chat_message',
+              chatId: chatId.toString(),
+              messageId: newMessage._id.toString()
+            };
+
+            await NotificationService.saveNotification(
+              recipientUserId,
+              notificationTitle,
+              notificationBody,
+              'chat_message',
+              notificationData
+            );
+
+            // 2. Then send push notification if tokens exist
             if (recipientUser.fcmTokens && recipientUser.fcmTokens.length > 0) {
               await NotificationService.sendToMulticast(
                 recipientUser.fcmTokens,
-                `New message from ${senderName}`,
-                text.length > 50 ? text.substring(0, 47) + '...' : text,
-                {
-                  type: 'chat_message',
-                  chatId: chatId.toString(),
-                  messageId: newMessage._id.toString()
-                },
-                recipientUserId // Pass userId to save notification
+                notificationTitle,
+                notificationBody,
+                notificationData
+                // recipientUserId is NOT passed here to avoid double-saving
               );
             }
           } else {

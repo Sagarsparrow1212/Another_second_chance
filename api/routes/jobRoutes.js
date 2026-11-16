@@ -10,6 +10,7 @@ const {
     deleteJob,
     applyForJob,
     getHomelessApplications,
+    rejectApplication,
 } = require('../controllers/jobController');
 
 // @route   GET /api/v1/jobs
@@ -52,6 +53,11 @@ router.patch('/jobs/:jobId', protect, authorize('merchant', 'organization', 'adm
 // @desc    Delete a job (soft delete)
 // @access  Private - Merchant, Organization, or Admin
 router.delete('/jobs/:jobId', protect, authorize('merchant', 'organization', 'admin'), deleteJob);
+
+// @route   PATCH /api/v1/applications/:id/reject
+// @desc    Reject a job application
+// @access  Private - Merchant or Admin
+router.patch('/applications/:id/reject', protect, authorize('merchant', 'admin'), rejectApplication);
 
 module.exports = router;
 
