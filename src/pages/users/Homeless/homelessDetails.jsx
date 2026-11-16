@@ -1,43 +1,47 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Typography,
-  Button,
-  Tabs,
-  TabsHeader,
-  TabsBody,
-  Tab,
-  TabPanel,
-  Chip,
-  Dialog,
-  DialogBody,
-  DialogHeader,
-  Avatar,
-  Card,
-  CardBody,
-} from "@material-tailwind/react";
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  UserIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  CalendarIcon,
-  MapPinIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  BriefcaseIcon,
-  AcademicCapIcon,
-  XMarkIcon,
-  MagnifyingGlassPlusIcon,
-  MagnifyingGlassMinusIcon,
-  InformationCircleIcon,
-  PencilIcon,
-  BuildingOffice2Icon,
-} from "@heroicons/react/24/outline";
-import { BanknotesIcon } from "@heroicons/react/24/solid";
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Clock,
+  Pencil,
+  Briefcase,
+  Building2,
+  DollarSign,
+  HeartHandshake,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Copy,
+  Check,
+  Languages,
+  Activity,
+  FileText,
+  ExternalLink,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { Dialog, DialogHeader, DialogBody } from "@material-tailwind/react";
 import { API_BASE_URL_V1, API_BASE_URL, getFileUrl, getUploadUrl } from "@/configs/api";
+
+const formatPhoneNumber = (value) => {
+  if (!value) return "N/A";
+  const phoneNumber = value.replace(/\D/g, "");
+  const limitedNumber = phoneNumber.slice(0, 10);
+  if (limitedNumber.length === 0) {
+    return value;
+  } else if (limitedNumber.length <= 3) {
+    return `(${limitedNumber}`;
+  } else if (limitedNumber.length <= 6) {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+  } else {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
+  }
+};
 
 export function HomelessDetails() {
   const { id } = useParams();
@@ -46,10 +50,17 @@ export function HomelessDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("basic");
-  const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [imageZoom, setImageZoom] = useState(60);
   const [donations, setDonations] = useState([]);
   const [loadingDonations, setLoadingDonations] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(null);
+
+  const handleCopy = (text, key) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   useEffect(() => {
     const fetchHomelessDetails = async () => {
@@ -57,72 +68,61 @@ export function HomelessDetails() {
         setLoading(true);
         setError("");
 
-        // Get token from localStorage
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = localStorage.getItem("auth_session");
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/homeless/${id}`, {
           headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch homeless user details');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to fetch individual profile");
         }
 
         const data = await response.json();
-
         if (data.success) {
-          setHomeless(data.data);
+          setHomeless(data.data.homeless || data.data);
         } else {
-          setError(data.message || 'Failed to fetch homeless user details');
+          setError(data.message || "Failed to fetch individual profile");
         }
       } catch (err) {
-        console.error('Fetch homeless details error:', err);
-        setError(err.message || 'An error occurred while fetching homeless user details');
+        console.error("Fetch homeless details error:", err);
+        setError(err.message || "Failed to load profile details");
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchHomelessDetails();
-    }
+    if (id) fetchHomelessDetails();
   }, [id]);
 
-  // Fetch donations when donations tab is active
   useEffect(() => {
     const fetchDonations = async () => {
-      if (activeTab !== 'donations' || !id) return;
-
+      if (activeTab !== "donations" || !id) return;
       try {
         setLoadingDonations(true);
-
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = localStorage.getItem("auth_session");
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/donations/homeless/${id}?limit=100`, {
           headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch donations');
-        }
-
         const data = await response.json();
-
         if (data.success) {
           setDonations(data.data.donations || []);
         } else {
           setDonations([]);
         }
       } catch (err) {
-        console.error('Fetch donations error:', err);
+        console.error("Fetch donations error:", err);
         setDonations([]);
       } finally {
         setLoadingDonations(false);
@@ -132,825 +132,640 @@ export function HomelessDetails() {
     fetchDonations();
   }, [activeTab, id]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (verified) => {
-    if (verified) {
-      return "green";
-    }
-    return "amber";
-  };
-
   const getHomelessFileUrl = (filePath) => {
     if (!filePath) return null;
-    // If it's already a full URL, return it
-    if (filePath.startsWith('http')) {
-      return filePath;
-    }
-    // If it starts with /uploads, use it directly
-    if (filePath.startsWith('/uploads')) {
-      return getFileUrl(filePath);
-    }
-    // Otherwise, construct the URL
-    return getUploadUrl('homeless', filePath);
+    if (filePath.startsWith("http")) return filePath;
+    if (filePath.startsWith("/uploads")) return getFileUrl(filePath);
+    return getUploadUrl("homeless", filePath);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <svg
-              className="animate-spin h-8 w-8 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-          <Typography color="blue-gray">Loading homeless user details...</Typography>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[450px]">
+        <div className="w-8 h-8 border-3 border-[#2878E5] border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-xs font-semibold text-enterprise-muted">Loading profile details...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !homeless) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
-          <Typography color="red" className="mb-4">{error}</Typography>
-          <Button
-            onClick={() => navigate(-1)}
-            className="bg-blue-600 text-white"
-          >
-            Go Back
-          </Button>
-        </div>
+      <div className="bg-white rounded-2xl border border-[#E7ECF2] p-8 text-center max-w-md mx-auto my-12 shadow-card">
+        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+        <h3 className="text-base font-bold text-enterprise-textPrimary mb-1">
+          {error || "Profile Not Found"}
+        </h3>
+        <p className="text-xs text-enterprise-textSecondary mb-4">
+          The requested homeless user profile could not be loaded.
+        </p>
+        <button
+          onClick={() => navigate("/dashboard/homeless")}
+          className="px-4 py-2 bg-[#2878E5] text-white text-xs font-semibold rounded-lg hover:bg-[#1d6cd4] transition-colors"
+        >
+          Back to Homeless Users
+        </button>
       </div>
     );
   }
 
-  if (!homeless) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
-          <Typography color="blue-gray" className="mb-4">Homeless user not found</Typography>
-          <Button
-            onClick={() => navigate(-1)}
-            className="bg-blue-600 text-white"
-          >
-            Go Back
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const statusText = homeless.verified ? 'VERIFIED' : 'PENDING';
-  const profilePictureUrl = getHomelessFileUrl(homeless.profilePicture);
-  const displayName = homeless.name || homeless.fullName || 'Unknown';
-
-  // Zoom control functions
-  const handleZoomIn = () => {
-    setImageZoom((prev) => Math.min(prev + 25, 300)); // Max 300%
-  };
-
-  const handleZoomOut = () => {
-    setImageZoom((prev) => Math.max(prev - 25, 50)); // Min 50%
-  };
-
-  const handleResetZoom = () => {
-    setImageZoom(100);
-  };
-
-  const handleImageModalClose = () => {
-    setImageModalOpen(false);
-    setImageZoom(60); // Reset zoom when closing
-  };
+  const displayName = homeless.name || homeless.fullName || "Homeless Individual";
+  const photoUrl = getHomelessFileUrl(homeless.profilePicture);
 
   const tabsData = [
-    {
-      label: "Basic Information",
-      value: "basic",
-      icon: InformationCircleIcon,
-    },
-    {
-      label: "Skills & Experience",
-      value: "skills",
-      icon: BriefcaseIcon,
-    },
-    {
-      label: "Additional Info",
-      value: "additional",
-      icon: MapPinIcon,
-    },
-    // {
-    //   label: "Documents",
-    //   value: "documents",
-    //   icon: DocumentTextIcon,
-    // },
-    {
-      label: "Donations",
-      value: "donations",
-      icon: BanknotesIcon,
-    },
+    { label: "Basic Information", value: "basic", icon: User },
+    { label: "Skills & Experience", value: "skills", icon: Briefcase },
+    { label: "Additional Info", value: "additional", icon: MapPin },
+    { label: "Donations", value: "donations", icon: DollarSign, count: donations.length },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent", }}>
-        {/* Image Modal/Popup */}
-        <Dialog open={imageModalOpen} handler={handleImageModalClose} size="xl">
-          <DialogHeader className="flex justify-between items-center">
-            <Typography variant="h5" className="text-gray-900 font-bold">
-              {displayName}
-            </Typography>
-            <div className="flex items-center gap-2">
-              {/* Zoom Controls */}
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={handleZoomOut}
-                  disabled={imageZoom <= 50}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Zoom Out"
-                >
-                  <MagnifyingGlassMinusIcon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleResetZoom}
-                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors font-medium"
-                  title="Reset Zoom"
-                >
-                  {imageZoom}%
-                </button>
-                <button
-                  onClick={handleZoomIn}
-                  disabled={imageZoom >= 300}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Zoom In"
-                >
-                  <MagnifyingGlassPlusIcon className="w-5 h-5" />
-                </button>
-              </div>
-              <button
-                onClick={handleImageModalClose}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <XMarkIcon className="w-6 h-6" />
-              </button>
-            </div>
-          </DialogHeader>
-          <DialogBody className="p-0">
-            {profilePictureUrl && (
+    <div className="space-y-6">
+      {/* 1. Header Section */}
+      <header className="bg-white rounded-2xl border border-[#E7ECF2] p-5 sm:p-6 shadow-[0_1px_3px_0_rgba(16,24,40,0.04)]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          {/* Left section: Back button + Avatar + Name + Metadata */}
+          <div className="flex items-start sm:items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="group p-2.5 sm:px-3 sm:py-2.5 rounded-xl border border-[#E7ECF2] text-[#68778D] hover:text-[#172033] hover:bg-slate-50/80 hover:border-slate-300 transition-all flex items-center gap-2 flex-shrink-0"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#68778D] group-hover:-translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline text-xs font-semibold uppercase tracking-wider">
+                Back
+              </span>
+            </button>
+
+            <div className="hidden sm:block w-px h-10 bg-[#E7ECF2]" />
+
+            <div className="flex items-center gap-3.5">
+              {/* Profile Avatar */}
               <div
-                className="flex justify-center items-center bg-gray-100 p-4 min-h-[400px] overflow-auto"
-                onClick={(e) => e.stopPropagation()}
+                onClick={() => photoUrl && setImageModalOpen(true)}
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border border-[#E7ECF2] flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden font-bold text-lg text-white ${
+                  photoUrl ? "cursor-pointer hover:opacity-90 transition-opacity" : "bg-[#172B4D]"
+                }`}
               >
-                <img
-                  src={profilePictureUrl}
-                  alt={displayName}
-                  className="rounded-lg shadow-lg transition-transform duration-300"
-                  style={{
-                    width: `${imageZoom}%`,
-                    height: 'auto',
-                    maxWidth: 'none',
-                    maxHeight: 'none',
-                    objectFit: 'contain',
-                    cursor: imageZoom > 100 ? 'grab' : 'default',
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onError={(e) => {
-                    if (!e.target.src.includes('ui-avatars.com') && !e.target.src.includes('placeholder')) {
-                      e.target.onerror = null;
-                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=400&background=random`;
-                    }
-                  }}
-                  draggable={false}
-                />
+                {photoUrl ? (
+                  <img
+                    src={photoUrl}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.parentNode.innerText = displayName.charAt(0).toUpperCase();
+                      e.target.parentNode.className += " bg-[#172B4D]";
+                    }}
+                  />
+                ) : (
+                  displayName.charAt(0).toUpperCase()
+                )}
               </div>
-            )}
-          </DialogBody>
-        </Dialog>
 
-        {/* Header Section */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-gray-50"
-              >
-                <ArrowLeftIcon className="w-5 h-5" />
-                <span className="hidden sm:inline font-medium">Back</span>
-              </button>
-              <div className="w-px h-8 bg-gray-300" />
-              <div>
-                <Typography variant="h5" className="text-gray-900 font-bold">
-                  {displayName}
-                </Typography>
-                <Typography variant="small" className="text-gray-500">
-                  Homeless User Details
-                </Typography>
+              {/* Title & Subtitle */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] truncate">
+                    {displayName}
+                  </h1>
+                  {homeless.username && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-[#475467] border border-slate-200">
+                      @{homeless.username}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-xs text-[#68778D] font-medium">
+                  <span>
+                    {homeless.age ? `${homeless.age} yrs` : "Age N/A"}
+                    {homeless.gender && ` • ${homeless.gender}`}
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#98A2B3]" />
+                    Registered {formatDate(homeless.createdAt)}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-
-              <Button
-                size="sm"
-                variant="outlined"
-                className="flex items-center gap-2 normal-case"
-                onClick={() => navigate(`/dashboard/homeless/${id}/edit`)}
-              >
-                <PencilIcon className="w-4 h-4" />
-                Edit
-              </Button>
             </div>
           </div>
-        </div>
 
-        {/* Tabs Section */}
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-          <Tabs value={activeTab} className="min-h-[600px]">
-            <div className="overflow-x-auto">
-              <TabsHeader
-                className="rounded-none border-b border-blue-gray-100 bg-gray-50/50 px-2 sm:px-4 md:px-6 pt-4 pb-0 w-full min-w-max"
-                indicatorProps={{
-                  className: "bg-transparent border-b-2 border-blue-600 shadow-none rounded-none",
-                }}
-              >
-                {tabsData.map(({ label, value, icon: Icon }) => {
-                  const isActive = activeTab === value;
-                  return (
-                    <Tab
-                      key={value}
-                      value={value}
-                      onClick={() => setActiveTab(value)}
-                      className="px-2 sm:px-3 md:px-4 py-3 font-semibold text-xs sm:text-sm md:text-base transition-all whitespace-nowrap"
-                    >
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 inline-block ${isActive ? "text-blue-600" : "text-gray-500"
-                          }`} />
-                        <span className={`${isActive ? "text-blue-600" : "text-gray-600"
-                          }`}>
-                          <span className="hidden sm:inline">{label}</span>
-                          <span className="sm:hidden">
-                            {value === "basic" ? "Basic" : value === "skills" ? "Skills" : value === "additional" ? "Info" : value === "donations" ? "Donations" : "Docs"}
-                          </span>
-                        </span>
-                      </div>
-                    </Tab>
-                  );
-                })}
-              </TabsHeader>
+          {/* Right section: Status badge + Edit action */}
+          <div className="flex items-center flex-wrap gap-2.5 sm:gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#E7ECF2]">
+            {/* Status Badge */}
+            <div
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
+                homeless.verified !== false
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  homeless.verified !== false ? "bg-emerald-500" : "bg-amber-500"
+                }`}
+              />
+              <span>{homeless.verified !== false ? "Verified Profile" : "Pending Review"}</span>
             </div>
 
-            <TabsBody className="p-6">
-              {/* Basic Information Tab */}
-              <TabPanel value="basic" className="p-0">
-                {/* Profile Picture with Name - Creative Design */}
-                <div className="mb-8">
-                  <div className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-8 border border-blue-100 shadow-lg overflow-hidden">
-                    {/* Decorative background elements */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200 rounded-full opacity-10 blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-200 rounded-full opacity-10 blur-3xl"></div>
-
-                    <div className="relative flex flex-col sm:flex-row items-center gap-6">
-                      {/* Profile Picture */}
-                      <div className="relative group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                        {profilePictureUrl ? (
-                          <img
-                            src={profilePictureUrl}
-                            alt={displayName}
-                            className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300 shadow-xl border-4 border-white ring-4 ring-blue-100"
-                            onClick={() => setImageModalOpen(true)}
-                            onError={(e) => {
-                              if (!e.target.src.includes('ui-avatars.com') && !e.target.src.includes('placeholder')) {
-                                e.target.onerror = null;
-                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=160&background=random`;
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-xl border-4 border-white ring-4 ring-blue-100">
-                            <UserIcon className="w-16 h-16 sm:w-20 sm:h-20 text-white" />
-                          </div>
-                        )}
-                        <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2 border-4 border-white shadow-lg">
-                          <CheckCircleIcon className="w-5 h-5 text-white" />
-                        </div>
-                      </div>
-
-                      {/* Name and Basic Info */}
-                      <div className="flex-1 text-center sm:text-left">
-                        <Typography variant="h3" className="text-gray-900 font-bold mb-2">
-                          {displayName}
-                        </Typography>
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-4">
-                          {homeless.age && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <CalendarIcon className="w-5 h-5 text-blue-600" />
-                              <span className="font-medium">{homeless.age} years old</span>
-                            </div>
-                          )}
-                          {homeless.gender && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <UserIcon className="w-5 h-5 text-purple-600" />
-                              <span className="font-medium">{homeless.gender}</span>
-                            </div>
-                          )}
-                        </div>
-                        {homeless.bio && (
-                          <Typography variant="small" className="text-gray-600 mt-4 line-clamp-2">
-                            {homeless.bio}
-                          </Typography>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <InformationCircleIcon className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <Typography variant="h5" className="text-gray-900 font-bold">
-                    Contact Information
-                  </Typography>
-                </div>
-                <div className="space-y-6">
-                  {/* Username, Email Address and Phone Number */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {homeless.username && (
-                      <div className="p-4 rounded-lg bg-gray-50">
-                        <label className="block text-gray-500 text-sm mb-2 font-medium">Username</label>
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-blue-100 rounded-lg">
-                            <UserIcon className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <p className="text-gray-900 font-semibold text-lg">{homeless.username}</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Email Address</label>
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <EnvelopeIcon className="w-4 h-4 text-blue-600" />
-                        </div>
-                        {homeless.email ? (
-                          <a
-                            href={`mailto:${homeless.email}`}
-                            className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer font-semibold text-lg"
-                          >
-                            {homeless.email}
-                          </a>
-                        ) : (
-                          <p className="text-gray-900 font-semibold text-lg">N/A</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Phone Number</label>
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <PhoneIcon className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <p className="text-gray-900 font-semibold text-lg">{homeless.contactPhone || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Organization */}
-                  {homeless.organization && (
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Organization</label>
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <BuildingOffice2Icon className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <button
-                          onClick={() => navigate(`/dashboard/organizations/${homeless.organization.id}`)}
-                          className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer font-semibold text-lg hover:underline"
-                        >
-                          {homeless.organization.name}
-                          {homeless.organization.city && homeless.organization.state && (
-                            <span className="text-gray-500 font-normal ml-1">
-                              ({homeless.organization.city}, {homeless.organization.state})
-                            </span>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Registration Date */}
-                  <div className="p-4 rounded-lg bg-gray-50">
-                    <label className="block text-gray-500 text-sm mb-2 font-medium">Registration Date</label>
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-100 rounded-lg">
-                        <CalendarIcon className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <p className="text-gray-900 font-semibold text-lg">{formatDate(homeless.createdAt)}</p>
-                    </div>
-                  </div>
-
-                  {/* Account Status */}
-                  {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-200">
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Verification Status</label>
-                      <div className="flex items-center gap-2">
-                        {homeless.verified ? (
-                          <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircleIcon className="w-5 h-5 text-amber-500" />
-                        )}
-                        <p className="text-gray-900 font-semibold text-lg">{homeless.verified ? 'Verified' : 'Pending Verification'}</p>
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Account Status</label>
-                      <div className="flex items-center gap-2">
-                        {homeless.isActive ? (
-                          <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircleIcon className="w-5 h-5 text-red-500" />
-                        )}
-                        <p className="text-gray-900 font-semibold text-lg">{homeless.isActive ? 'Active' : 'Inactive'}</p>
-                      </div>
-                    </div>
-                    {homeless.updatedAt && (
-                      <div className="p-4 rounded-lg bg-gray-50 sm:col-span-2">
-                        <label className="block text-gray-500 text-sm mb-2 font-medium">Last Updated</label>
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 bg-blue-100 rounded-lg">
-                            <ClockIcon className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <p className="text-gray-900 font-semibold text-lg">{formatDate(homeless.updatedAt)}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div> */}
-                </div>
-              </TabPanel>
-
-              {/* Skills & Experience Tab */}
-              <TabPanel value="skills" className="p-0">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <BriefcaseIcon className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <Typography variant="h5" className="text-gray-900 font-bold">
-                    Skills & Experience
-                  </Typography>
-                </div>
-                <div className="space-y-6">
-                  {/* Skills */}
-                  <div className="p-4 rounded-lg bg-gray-50">
-                    <label className="block text-gray-500 text-sm mb-3 font-medium">Skills</label>
-                    <div className="flex flex-wrap gap-2">
-                      {homeless.skillset && homeless.skillset.length > 0 ? (
-                        homeless.skillset.map((skill, idx) => (
-                          <Chip
-                            key={idx}
-                            variant="gradient"
-                            color="purple"
-                            value={skill}
-                            className="py-2 px-4 text-sm font-semibold"
-                          />
-                        ))
-                      ) : (
-                        <p className="text-gray-500 text-sm">No skills listed</p>
-                      )}
-                    </div>
-                  </div>
-                  {/* Experience */}
-                  {homeless.experience && (
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Experience</label>
-                      <p className="text-gray-900 font-semibold text-lg whitespace-pre-wrap">{homeless.experience}</p>
-                    </div>
-                  )}
-                  {/* Languages */}
-                  {homeless.languages && homeless.languages.length > 0 && (
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-3 font-medium flex items-center gap-2">
-                        <AcademicCapIcon className="w-5 h-5 text-purple-600" />
-                        Languages Known
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {homeless.languages.map((language, idx) => (
-                          <Chip
-                            key={idx}
-                            variant="gradient"
-                            color="blue"
-                            value={language}
-                            className="py-2 px-4 text-sm font-semibold"
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </TabPanel>
-
-              {/* Additional Information Tab */}
-              <TabPanel value="additional" className="p-0">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-indigo-100 rounded-lg">
-                    <MapPinIcon className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <Typography variant="h5" className="text-gray-900 font-bold">
-                    Additional Information
-                  </Typography>
-                </div>
-                <div className="space-y-6">
-                  {homeless.location && (
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Location</label>
-                      <div className="flex items-center gap-2">
-                        <MapPinIcon className="w-5 h-5 text-indigo-600" />
-                        <p className="text-gray-900 font-semibold text-lg">{homeless.location}</p>
-                      </div>
-                    </div>
-                  )}
-                  {homeless.address && (
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Address</label>
-                      <p className="text-gray-900 font-semibold text-lg">{homeless.address}</p>
-                    </div>
-                  )}
-                  {homeless.bio && (
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Bio / Description</label>
-                      <p className="text-gray-900 font-medium whitespace-pre-wrap leading-relaxed">{homeless.bio}</p>
-                    </div>
-                  )}
-                  {homeless.healthConditions && (
-                    <div className="p-4 rounded-lg bg-red-50/30">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium flex items-center gap-2">
-                        <DocumentTextIcon className="w-5 h-5 text-red-600" />
-                        Health Conditions
-                      </label>
-                      <p className="text-gray-900 font-medium whitespace-pre-wrap leading-relaxed">{homeless.healthConditions}</p>
-                    </div>
-                  )}
-                  {!homeless.location && !homeless.address && !homeless.bio && !homeless.healthConditions && (
-                    <div className="text-center py-12">
-                      <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                        <MapPinIcon className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <Typography color="blue-gray" className="text-lg">
-                        No additional information available
-                      </Typography>
-                    </div>
-                  )}
-                </div>
-              </TabPanel>
-
-              {/* Documents Tab */}
-              {/* <TabPanel value="documents" className="p-0">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-indigo-100 rounded-lg">
-                    <DocumentTextIcon className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <Typography variant="h5" className="text-gray-900 font-bold">
-                    Documents
-                  </Typography>
-                </div>
-                {(homeless.profilePicture || homeless.verificationDocument) ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {homeless.profilePicture && (
-                      <div className="p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition-all">
-                        <div className="flex items-center gap-2 mb-3">
-                          <UserIcon className="w-5 h-5 text-gray-600" />
-                          <Typography variant="h6" className="text-gray-900 font-semibold text-sm">
-                            Profile Picture
-                          </Typography>
-                        </div>
-                        <a
-                          href={getHomelessFileUrl(homeless.profilePicture)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium underline inline-flex items-center gap-1"
-                        >
-                          View Image
-                        </a>
-                      </div>
-                    )}
-                    {homeless.verificationDocument && (
-                      <div className="p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition-all">
-                        <div className="flex items-center gap-2 mb-3">
-                          <DocumentTextIcon className="w-5 h-5 text-gray-600" />
-                          <Typography variant="h6" className="text-gray-900 font-semibold text-sm">
-                            Verification Document
-                          </Typography>
-                        </div>
-                        <a
-                          href={getHomelessFileUrl(homeless.verificationDocument)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium underline inline-flex items-center gap-1"
-                        >
-                          View Document
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <DocumentTextIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <Typography color="blue-gray" className="text-lg">
-                      No documents uploaded
-                    </Typography>
-                  </div>
-                )}
-              </TabPanel> */}
-
-              {/* Donations Tab */}
-              <TabPanel value="donations" className="p-0">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <BanknotesIcon className="w-6 h-6 text-green-600" />
-                  </div>
-                  <Typography variant="h5" className="text-gray-900 font-bold">
-                    Donations Received
-                  </Typography>
-                  <Typography variant="small" className="text-gray-500">
-                    ({donations.length} {donations.length === 1 ? 'donation' : 'donations'})
-                  </Typography>
-                </div>
-
-                {loadingDonations ? (
-                  <div className="p-8 text-center">
-                    <div className="flex items-center justify-center">
-                      <svg
-                        className="animate-spin h-8 w-8 text-green-600"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                    </div>
-                    <Typography color="blue-gray" className="mt-4">Loading donations...</Typography>
-                  </div>
-                ) : donations.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <BanknotesIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <Typography color="blue-gray" className="text-lg mb-2">
-                      No donations received
-                    </Typography>
-                    <Typography variant="small" color="gray" className="text-sm">
-                      This person has not received any donations yet.
-                    </Typography>
-                  </div>
-                ) : (
-                  <Card className="border border-blue-gray-200 shadow-sm">
-                    <CardBody className="px-0 pt-0 pb-2">
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[640px] table-auto text-left">
-                          <thead>
-                            <tr>
-                              {["Date", "Donor", "Organization", "Type", "My Share / Total", "Status"].map((el) => (
-                                <th
-                                  key={el}
-                                  className="border-b border-blue-gray-400 py-3 px-5 text-left w-auto min-w-[120px]"
-                                >
-                                  <Typography
-                                    variant="small"
-                                    className="text-[13px] font-bold uppercase text-blue-gray-400"
-                                  >
-                                    {el}
-                                  </Typography>
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {donations.map((donation, key) => {
-                              const className = `py-3 px-5 ${key === donations.length - 1 ? "" : "border-b border-blue-gray-200"}`;
-
-                              const getStatusColor = (status) => {
-                                switch (status?.toLowerCase()) {
-                                  case 'completed': return 'green';
-                                  case 'pending': return 'amber';
-                                  case 'cancelled':
-                                  case 'failed': return 'red';
-                                  default: return 'gray';
-                                }
-                              };
-
-                              return (
-                                <tr key={donation._id || key} className="hover:bg-blue-gray-50 transition-colors">
-                                  <td className={className}>
-                                    <Typography className="text-sm font-medium text-blue-gray-900">
-                                      {formatDate(donation.createdAt)}
-                                    </Typography>
-                                  </td>
-                                  <td className={className}>
-                                    <Typography className="text-sm font-semibold text-blue-gray-900">
-                                      {donation.donorId?.donorFullName || 'Anonymous'}
-                                    </Typography>
-                                    <Typography className="text-xs text-blue-gray-500">
-                                      {donation.donorId?.donorEmail || ''}
-                                    </Typography>
-                                  </td>
-                                  <td className={className}>
-                                    <Typography className="text-sm font-medium text-blue-gray-600">
-                                      {donation.organizationId?.orgName || 'N/A'}
-                                    </Typography>
-                                  </td>
-                                  <td className={className}>
-                                    <Chip
-                                      size="sm"
-                                      variant="ghost"
-                                      value={donation.donationType || 'Unknown'}
-                                      color={donation.donationType === 'Money' ? 'green' : 'blue'}
-                                      className="inline-block"
-                                    />
-                                  </td>
-                                  <td className={className}>
-                                    {donation.donationType === 'Money' ? (
-                                      <div>
-                                        <Typography className="text-sm font-bold text-gray-900">
-                                          {(donation.homelessAmount !== undefined ? donation.homelessAmount : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {donation.currency || 'USD'}
-                                        </Typography>
-                                        <Typography className="text-xs text-blue-gray-500 mt-0.5" title="Net Donation Amount (After Fees)">
-                                          Total: {(donation.netAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {donation.currency || 'USD'}
-                                        </Typography>
-                                      </div>
-                                    ) : (
-                                      <Typography className="text-sm font-bold text-gray-900">
-                                        {donation.itemDetails || 'N/A'}
-                                      </Typography>
-                                    )}
-                                  </td>
-                                  <td className={`${className} min-w-[120px]`}>
-                                    <div className="w-max">
-                                      <Chip
-                                        size="sm"
-                                        value={donation.status || 'Pending'}
-                                        color={getStatusColor(donation.status)}
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardBody>
-                  </Card>
-                )}
-              </TabPanel>
-            </TabsBody>
-          </Tabs>
+            {/* Edit Button */}
+            <button
+              onClick={() => navigate(`/dashboard/homeless/${id}/edit`)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2878E5] text-white text-xs font-semibold hover:bg-[#1d6cd4] shadow-sm hover:shadow transition-all"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* 2. Navigation Tabs & Content Container */}
+      <main className="bg-white rounded-2xl border border-[#E7ECF2] shadow-[0_1px_3px_0_rgba(16,24,40,0.04)] overflow-hidden">
+        {/* Navigation Bar */}
+        <nav
+          aria-label="Homeless profile sections"
+          className="border-b border-[#E7ECF2] bg-[#FAFBFD] px-4 sm:px-6 overflow-x-auto scrollbar-none"
+        >
+          <div className="flex space-x-1 sm:space-x-2 min-w-max">
+            {tabsData.map(({ label, value, icon: TabIcon, count }) => {
+              const isActive = activeTab === value;
+              return (
+                <button
+                  key={value}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTab(value)}
+                  className={`group relative flex items-center gap-2 py-4 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all outline-none ${
+                    isActive
+                      ? "text-[#2878E5]"
+                      : "text-[#68778D] hover:text-[#172033] hover:bg-slate-100/60 rounded-t-lg"
+                  }`}
+                >
+                  <TabIcon
+                    className={`w-4 h-4 transition-colors ${
+                      isActive ? "text-[#2878E5]" : "text-[#98A2B3] group-hover:text-[#68778D]"
+                    }`}
+                  />
+                  <span>{label}</span>
+
+                  {typeof count === "number" && (
+                    <span
+                      className={`ml-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                        isActive
+                          ? "bg-[#2878E5]/10 text-[#2878E5]"
+                          : "bg-slate-200/80 text-[#68778D] group-hover:bg-slate-300/80"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2878E5] rounded-t-full shadow-[0_-1px_4px_rgba(40,120,229,0.3)]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Tab Content Panes */}
+        <div className="p-5 sm:p-7 lg:p-8 min-h-[460px]">
+          {/* TAB 1: BASIC INFORMATION */}
+          {activeTab === "basic" && (
+            <section className="space-y-6">
+              {/* Profile Card Banner (Bio + Sponsor Org) */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50/30 to-indigo-50/20 border border-[#E7ECF2] flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                <div
+                  onClick={() => photoUrl && setImageModalOpen(true)}
+                  className={`w-20 h-20 rounded-2xl border border-white shadow-card flex items-center justify-center flex-shrink-0 text-white font-bold text-2xl ${
+                    photoUrl ? "cursor-pointer overflow-hidden" : "bg-[#172B4D]"
+                  }`}
+                >
+                  {photoUrl ? (
+                    <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    displayName.charAt(0).toUpperCase()
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-bold text-[#172033]">{displayName}</h3>
+                    {homeless.organization && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-md font-medium bg-white text-[#2878E5] border border-[#2878E5]/20 shadow-subtle">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>Sponsored by {homeless.organization.name || "Partner Organization"}</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#68778D] leading-relaxed max-w-3xl">
+                    {homeless.bio ||
+                      "Registered beneficiary receiving platform support, job placement assistance, and donor contributions."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Structured Fields Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {/* Username */}
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                      Username
+                    </span>
+                    <p className="text-sm font-semibold text-[#172033]">
+                      @{homeless.username || "n/a"}
+                    </p>
+                  </div>
+                  {homeless.username && (
+                    <button
+                      onClick={() => handleCopy(homeless.username, "username")}
+                      className="p-2 rounded-lg bg-white border border-[#E7ECF2] hover:bg-slate-50 text-[#68778D] transition-colors"
+                      title="Copy Username"
+                    >
+                      {copiedKey === "username" ? (
+                        <Check className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Email Address */}
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                      Email Address
+                    </span>
+                    {homeless.email ? (
+                      <a
+                        href={`mailto:${homeless.email}`}
+                        className="text-sm font-semibold text-[#2878E5] hover:underline truncate block"
+                      >
+                        {homeless.email}
+                      </a>
+                    ) : (
+                      <p className="text-sm font-semibold text-[#172033]">N/A</p>
+                    )}
+                  </div>
+                  {homeless.email && (
+                    <button
+                      onClick={() => handleCopy(homeless.email, "email")}
+                      className="p-2 rounded-lg bg-white border border-[#E7ECF2] hover:bg-slate-50 text-[#68778D] transition-colors"
+                      title="Copy Email"
+                    >
+                      {copiedKey === "email" ? (
+                        <Check className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Contact Phone */}
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                      Phone Number
+                    </span>
+                    <p className="text-sm font-semibold text-[#172033]">
+                      {formatPhoneNumber(homeless.contactPhone || homeless.phone)}
+                    </p>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-white border border-[#E7ECF2] flex items-center justify-center text-[#2878E5] flex-shrink-0">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Organization Sponsor */}
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] flex items-center justify-between">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                      Sponsor Organization
+                    </span>
+                    {homeless.organization ? (
+                      <button
+                        onClick={() =>
+                          navigate(`/dashboard/organizations/${homeless.organization.id}`)
+                        }
+                        className="text-sm font-semibold text-[#2878E5] hover:underline truncate block text-left"
+                      >
+                        {homeless.organization.name}
+                      </button>
+                    ) : (
+                      <p className="text-sm font-semibold text-[#172033]">None Assigned</p>
+                    )}
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-white border border-[#E7ECF2] flex items-center justify-center text-[#2878E5] flex-shrink-0">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Registration Date */}
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] flex items-center justify-between md:col-span-2">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                      Registration Date
+                    </span>
+                    <p className="text-sm font-semibold text-[#172033]">
+                      {formatDate(homeless.createdAt)}
+                    </p>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-white border border-[#E7ECF2] flex items-center justify-center text-[#2878E5] flex-shrink-0">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* TAB 2: SKILLS & EXPERIENCE */}
+          {activeTab === "skills" && (
+            <section className="space-y-6">
+              <div className="pb-4 border-b border-[#E7ECF2]">
+                <h2 className="text-base font-bold text-[#172033]">Skills & Work Experience</h2>
+                <p className="text-xs text-[#68778D] mt-0.5">
+                  Employment competencies, language proficiencies, and work history.
+                </p>
+              </div>
+
+              {/* Skills Tags */}
+              <div className="p-5 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] space-y-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block">
+                  Identified Skills
+                </span>
+                {homeless.skillset && homeless.skillset.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {homeless.skillset.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-white border border-[#E7ECF2] text-[#172033] shadow-subtle"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-[#2878E5]" />
+                        <span>{skill}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#68778D]">No specific skills recorded.</p>
+                )}
+              </div>
+
+              {/* Experience Details */}
+              <div className="p-5 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block">
+                  Work Experience & Background
+                </span>
+                <p className="text-xs text-[#172033] font-medium leading-relaxed whitespace-pre-wrap">
+                  {homeless.experience || "No prior job history or employment record provided."}
+                </p>
+              </div>
+
+              {/* Languages */}
+              <div className="p-5 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] space-y-3">
+                <div className="flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-[#2878E5]" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3]">
+                    Languages Spoken
+                  </span>
+                </div>
+                {homeless.languages && homeless.languages.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {homeless.languages.map((lang, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-[#2878E5] border border-blue-200"
+                      >
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#68778D]">English (Default)</p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* TAB 3: ADDITIONAL INFO */}
+          {activeTab === "additional" && (
+            <section className="space-y-6">
+              <div className="pb-4 border-b border-[#E7ECF2]">
+                <h2 className="text-base font-bold text-[#172033]">Additional Information</h2>
+                <p className="text-xs text-[#68778D] mt-0.5">
+                  Location details, accommodations, and special medical or health considerations.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                    Primary Area / Location
+                  </span>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-[#172033]">
+                    <MapPin className="w-4 h-4 text-[#2878E5] flex-shrink-0" />
+                    <span>{homeless.location || "Unspecified Area"}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] block mb-1">
+                    Shelter or Mailing Address
+                  </span>
+                  <p className="text-sm font-semibold text-[#172033]">
+                    {homeless.address || "No permanent address"}
+                  </p>
+                </div>
+
+                {/* Health Conditions */}
+                <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] md:col-span-2">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Activity className="w-4 h-4 text-rose-500" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3]">
+                      Health Conditions & Dietary Needs
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#172033] font-medium leading-relaxed">
+                    {homeless.healthConditions || "None reported."}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* TAB 4: DONATIONS */}
+          {activeTab === "donations" && (
+            <section className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E7ECF2] gap-2">
+                <div>
+                  <h2 className="text-base font-bold text-[#172033]">Donations Received</h2>
+                  <p className="text-xs text-[#68778D] mt-0.5">
+                    History of financial aid and item donations distributed to this individual.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-[#475467] border border-slate-200 w-fit">
+                  {donations.length} total receipts
+                </span>
+              </div>
+
+              {loadingDonations ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-7 h-7 border-3 border-[#2878E5] border-t-transparent rounded-full animate-spin mb-2" />
+                  <p className="text-xs font-semibold text-enterprise-muted">Loading donation receipts...</p>
+                </div>
+              ) : donations.length === 0 ? (
+                <div className="text-center py-14 bg-[#FAFBFD] rounded-xl border border-dashed border-[#E7ECF2]">
+                  <div className="w-12 h-12 bg-white rounded-xl border border-[#E7ECF2] flex items-center justify-center mx-auto mb-3 text-[#98A2B3]">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#172033] mb-1">No Donations Received</h3>
+                  <p className="text-xs text-[#68778D]">
+                    This individual has not received any direct donations yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-[#E7ECF2]">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
+                        <th className="py-3 px-4 font-bold uppercase tracking-wider text-[#98A2B3] text-[11px]">
+                          Date
+                        </th>
+                        <th className="py-3 px-4 font-bold uppercase tracking-wider text-[#98A2B3] text-[11px]">
+                          Donor
+                        </th>
+                        <th className="py-3 px-4 font-bold uppercase tracking-wider text-[#98A2B3] text-[11px]">
+                          Organization
+                        </th>
+                        <th className="py-3 px-4 font-bold uppercase tracking-wider text-[#98A2B3] text-[11px]">
+                          Type
+                        </th>
+                        <th className="py-3 px-4 font-bold uppercase tracking-wider text-[#98A2B3] text-[11px]">
+                          Net Share / Total
+                        </th>
+                        <th className="py-3 px-4 font-bold uppercase tracking-wider text-[#98A2B3] text-[11px]">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E7ECF2]">
+                      {donations.map((d, idx) => {
+                        const status = (d.status || "Pending").toLowerCase();
+                        const isCompleted = status === "completed";
+                        const isFailed = status === "failed" || status === "cancelled";
+
+                        return (
+                          <tr key={d._id || idx} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-3.5 px-4 font-medium text-[#172033]">
+                              {formatDate(d.createdAt)}
+                            </td>
+                            <td className="py-3.5 px-4 font-semibold text-[#172033]">
+                              {d.donorId?.donorFullName || d.donorId?.fullName || "Anonymous Donor"}
+                            </td>
+                            <td className="py-3.5 px-4 text-[#475467]">
+                              {d.organizationId?.orgName || d.organizationId?.name || "Direct Platform"}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                                  d.donationType === "Money"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-blue-50 text-[#2878E5] border border-blue-200"
+                                }`}
+                              >
+                                {d.donationType || "Donation"}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {d.donationType === "Money" ? (
+                                <div>
+                                  <p className="font-bold text-[#172033]">
+                                    ${(Number(d.homelessAmount) || 0).toLocaleString(undefined, {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}{" "}
+                                    {d.currency || "USD"}
+                                  </p>
+                                  <p className="text-[10px] text-[#98A2B3]">
+                                    Total: ${(Number(d.netAmount) || 0).toFixed(2)}
+                                  </p>
+                                </div>
+                              ) : (
+                                <span className="font-semibold text-[#172033]">
+                                  {d.itemDetails || "Item Package"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                                  isCompleted
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : isFailed
+                                    ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                                }`}
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    isCompleted
+                                      ? "bg-emerald-500"
+                                      : isFailed
+                                      ? "bg-rose-500"
+                                      : "bg-amber-500"
+                                  }`}
+                                />
+                                <span className="capitalize">{d.status || "Pending"}</span>
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      </main>
+
+      {/* Image Zoom Modal */}
+      {photoUrl && (
+        <Dialog open={imageModalOpen} handler={() => setImageModalOpen(false)} size="md">
+          <DialogHeader className="flex justify-between items-center text-sm font-bold text-[#172033] border-b border-[#E7ECF2]">
+            <span>{displayName} — Profile Photo</span>
+            <button
+              onClick={() => setImageModalOpen(false)}
+              className="p-1 rounded-lg text-[#98A2B3] hover:text-[#172033] hover:bg-slate-100"
+            >
+              ✕
+            </button>
+          </DialogHeader>
+          <DialogBody className="p-4 flex items-center justify-center bg-[#FAFBFD]">
+            <img
+              src={photoUrl}
+              alt={displayName}
+              className="max-h-[70vh] rounded-xl object-contain shadow-card"
+            />
+          </DialogBody>
+        </Dialog>
+      )}
     </div>
   );
 }
