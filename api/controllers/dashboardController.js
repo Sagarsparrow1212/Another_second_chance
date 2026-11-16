@@ -15,13 +15,44 @@ const User = require('../models/User');
  */
 const getDashboardStats = async (req, res) => {
     try {
-        // Count all non-deleted records for each entity
-        const [organizationsCount, merchantsCount, donorsCount, homelessCount] = await Promise.all([
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+        // Count all non-deleted records for each entity and operational insights
+        const [
+            organizationsCount,
+            merchantsCount,
+            donorsCount,
+            homelessCount,
+            pendingOrganizationsCount,
+            donationsAgg,
+            recentOrganizationsCount,
+            recentMerchantsCount
+        ] = await Promise.all([
             Organization.countDocuments({ isDeleted: false }),
             Merchant.countDocuments({ isDeleted: false }),
             Donor.countDocuments({ isDeleted: false }),
             Homeless.countDocuments({ isDeleted: false }),
+            // Pending Organization Approvals:
+            Organization.countDocuments({
+                isDeleted: false,
+                $or: [
+                    { currentStatus: "Pending" },
+                    { currentStatus: { $exists: false }, verified: false }
+                ]
+            }),
+            // Total Donation Contributions:
+            Donation.aggregate([
+                { $match: { isDeleted: false, status: { $in: ['Completed', 'completed', 'Success', 'success'] } } },
+                { $group: { _id: null, totalAmount: { $sum: '$amount' }, count: { $sum: 1 } } }
+            ]),
+            // Recently registered organizations (last 30 days):
+            Organization.countDocuments({ isDeleted: false, createdAt: { $gte: thirtyDaysAgo } }),
+            // Recently registered merchants (last 30 days):
+            Merchant.countDocuments({ isDeleted: false, createdAt: { $gte: thirtyDaysAgo } }),
         ]);
+
+        const totalDonationAmount = donationsAgg[0]?.totalAmount || 0;
+        const totalDonationCount = donationsAgg[0]?.count || 0;
 
         res.status(200).json({
             success: true,
@@ -31,6 +62,13 @@ const getDashboardStats = async (req, res) => {
                 merchants: merchantsCount,
                 donors: donorsCount,
                 homeless: homelessCount,
+                insights: {
+                    pendingOrganizations: pendingOrganizationsCount,
+                    totalDonations: totalDonationAmount,
+                    totalDonationsCount: totalDonationCount,
+                    recentOrganizations: recentOrganizationsCount,
+                    recentMerchants: recentMerchantsCount,
+                }
             },
         });
     } catch (error) {
