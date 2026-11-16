@@ -497,18 +497,18 @@ export function OrganizationDetails() {
   const StatusIcon = statusBadge.icon;
 
   return (
-    <div className="min-h-screen bg-[#F7F9FC] text-[#172033] antialiased">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="space-y-6 min-w-0 w-full max-w-full">
+      <div className="w-full space-y-6">
         {/* ========================================================================= */}
         {/* 1. ORGANIZATION HEADER                                                   */}
         {/* ========================================================================= */}
-        <header className="bg-white rounded-2xl border border-[#E7ECF2] p-5 sm:p-6 shadow-[0_1px_3px_0_rgba(16,24,40,0.04)] transition-all">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <header className="bg-white rounded-xl sm:rounded-2xl border border-[#E7ECF2] p-4 sm:p-5 shadow-card transition-all">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Left section: Back button + Avatar + Name + Metadata */}
-            <div className="flex items-start sm:items-center gap-4">
+            <div className="flex items-start sm:items-center gap-3.5 min-w-0">
               <button
                 onClick={() => navigate(-1)}
-                className="group p-2.5 sm:px-3 sm:py-2.5 rounded-xl border border-[#E7ECF2] text-[#68778D] hover:text-[#172033] hover:bg-slate-50/80 hover:border-slate-300 transition-all flex items-center gap-2 flex-shrink-0"
+                className="group p-2 sm:px-3 sm:py-2 rounded-lg border border-[#E7ECF2] text-[#68778D] hover:text-[#172033] hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-1.5 flex-shrink-0"
                 title="Go Back"
               >
                 <ArrowLeft className="w-4 h-4 text-[#68778D] group-hover:-translate-x-0.5 transition-transform" />
@@ -517,11 +517,11 @@ export function OrganizationDetails() {
                 </span>
               </button>
 
-              <div className="hidden sm:block w-px h-10 bg-[#E7ECF2]" />
+              <div className="hidden sm:block w-px h-8 bg-[#E7ECF2]" />
 
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-3 min-w-0">
                 {/* Organization Avatar */}
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-[#2878E5]/20 border border-[#2878E5]/20 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-enterprise-softBlue border border-[#2878E5]/20 flex items-center justify-center flex-shrink-0 shadow-subtle overflow-hidden">
                   {organization.logoUrl ? (
                     <img
                       src={getOrganizationFileUrl(organization.logoUrl)}
@@ -532,24 +532,32 @@ export function OrganizationDetails() {
                       }}
                     />
                   ) : (
-                    <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-[#2878E5]" />
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#2878E5]" />
                   )}
                 </div>
 
                 {/* Organization Details */}
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] truncate">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#172033] truncate" title={organization.name}>
                       {organization.name}
                     </h1>
                     {organization.orgType && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-[#475467] border border-slate-200/80">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold bg-slate-100 text-[#475467] border border-slate-200">
                         {organization.orgType}
                       </span>
                     )}
+                    {/* Status Badge integrated directly in identity row */}
+                    <div
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-semibold ${statusBadge.bg}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusBadge.dot}`} />
+                      <StatusIcon className="w-3 h-3" />
+                      <span>{statusBadge.label}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-[#68778D] font-medium">
-                    <span>Organization Details</span>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-[#68778D] font-medium">
+                    <span>Organization Profile</span>
                     <span className="text-slate-300">•</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-[#98A2B3]" />
@@ -560,21 +568,12 @@ export function OrganizationDetails() {
               </div>
             </div>
 
-            {/* Right section: Status badge + Actions */}
-            <div className="flex items-center flex-wrap gap-2.5 sm:gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#E7ECF2]">
-              {/* Status Badge */}
-              <div
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${statusBadge.bg}`}
-              >
-                <span className={`w-2 h-2 rounded-full ${statusBadge.dot}`} />
-                <StatusIcon className="w-3.5 h-3.5" />
-                <span>{statusBadge.label}</span>
-              </div>
-
-              {/* Add Homeless Button */}
+            {/* Right section: Header Action Controls */}
+            <div className="flex items-center flex-wrap gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#E7ECF2] self-start sm:self-auto">
+              {/* Add Homeless Member Button */}
               <button
                 onClick={() => navigate(`/dashboard/homeless/register/${id}`)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E7ECF2] text-xs font-semibold text-[#172033] hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-[#E7ECF2] text-xs font-semibold text-[#172033] hover:bg-slate-50 hover:border-slate-300 shadow-subtle transition-all"
               >
                 <UserPlus className="w-3.5 h-3.5 text-[#2878E5]" />
                 <span>Add Member</span>
@@ -583,10 +582,10 @@ export function OrganizationDetails() {
               {/* Edit Organization Button */}
               <button
                 onClick={() => navigate(`/dashboard/organizations/${id}/edit`)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#2878E5] text-white text-xs font-semibold hover:bg-[#1d6cd4] shadow-sm hover:shadow transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#2878E5] text-white text-xs font-semibold hover:bg-[#1d6cd4] shadow-subtle hover:shadow transition-all"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Organization</span>
+                <span>Edit Profile</span>
               </button>
             </div>
           </div>
@@ -665,19 +664,19 @@ export function OrganizationDetails() {
                   </span>
                 </div>
 
-                {/* 2-Column Responsive Information Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 3-Column Responsive Information Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                   {/* Organization Type */}
-                  <div className="group p-4 sm:p-5 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-blue-50/80 text-[#2878E5] border border-blue-100 flex-shrink-0">
-                        <Building2 className="w-5 h-5" />
+                  <div className="group p-4 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-blue-50/80 text-[#2878E5] border border-blue-100 flex-shrink-0">
+                        <Building2 className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68778D] block">
                           Organization Type
                         </span>
-                        <p className="text-sm sm:text-base font-bold text-[#172033] mt-1 break-words">
+                        <p className="text-sm font-bold text-[#172033] mt-0.5 truncate" title={organization.orgType || "N/A"}>
                           {organization.orgType || "N/A"}
                         </p>
                       </div>
@@ -685,16 +684,16 @@ export function OrganizationDetails() {
                   </div>
 
                   {/* Contact Person */}
-                  <div className="group p-4 sm:p-5 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-indigo-50/80 text-indigo-600 border border-indigo-100 flex-shrink-0">
-                        <User className="w-5 h-5" />
+                  <div className="group p-4 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-indigo-50/80 text-indigo-600 border border-indigo-100 flex-shrink-0">
+                        <User className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68778D] block">
                           Contact Person
                         </span>
-                        <p className="text-sm sm:text-base font-bold text-[#172033] mt-1 break-words">
+                        <p className="text-sm font-bold text-[#172033] mt-0.5 truncate" title={organization.contactPerson || "N/A"}>
                           {organization.contactPerson || "N/A"}
                         </p>
                       </div>
@@ -702,10 +701,10 @@ export function OrganizationDetails() {
                   </div>
 
                   {/* Email Address */}
-                  <div className="group p-4 sm:p-5 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-emerald-50/80 text-emerald-600 border border-emerald-100 flex-shrink-0">
-                        <Mail className="w-5 h-5" />
+                  <div className="group p-4 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-emerald-50/80 text-emerald-600 border border-emerald-100 flex-shrink-0">
+                        <Mail className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
@@ -719,17 +718,9 @@ export function OrganizationDetails() {
                               title="Copy Email"
                             >
                               {copiedKey === "email" ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span className="text-emerald-600 font-semibold text-[11px]">
-                                    Copied
-                                  </span>
-                                </>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
                               ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span className="text-[11px]">Copy</span>
-                                </>
+                                <Copy className="w-3.5 h-3.5" />
                               )}
                             </button>
                           )}
@@ -737,23 +728,24 @@ export function OrganizationDetails() {
                         {organization.email ? (
                           <a
                             href={`mailto:${organization.email}`}
-                            className="inline-flex items-center gap-1.5 text-sm sm:text-base font-bold text-[#2878E5] hover:text-[#1d6cd4] mt-1 break-all transition-colors"
+                            className="inline-flex items-center gap-1 text-sm font-bold text-[#2878E5] hover:text-[#1d6cd4] mt-0.5 truncate max-w-full transition-colors"
+                            title={organization.email}
                           >
-                            <span>{organization.email}</span>
-                            <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">{organization.email}</span>
+                            <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
                           </a>
                         ) : (
-                          <p className="text-sm sm:text-base font-bold text-[#172033] mt-1">N/A</p>
+                          <p className="text-sm font-bold text-[#172033] mt-0.5">N/A</p>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Phone Number */}
-                  <div className="group p-4 sm:p-5 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-cyan-50/80 text-cyan-600 border border-cyan-100 flex-shrink-0">
-                        <Phone className="w-5 h-5" />
+                  <div className="group p-4 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-cyan-50/80 text-cyan-600 border border-cyan-100 flex-shrink-0">
+                        <Phone className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
@@ -769,17 +761,9 @@ export function OrganizationDetails() {
                               title="Copy Phone"
                             >
                               {copiedKey === "phone" ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span className="text-emerald-600 font-semibold text-[11px]">
-                                    Copied
-                                  </span>
-                                </>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
                               ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span className="text-[11px]">Copy</span>
-                                </>
+                                <Copy className="w-3.5 h-3.5" />
                               )}
                             </button>
                           )}
@@ -787,27 +771,27 @@ export function OrganizationDetails() {
                         {organization.contactPhone ? (
                           <a
                             href={`tel:${organization.contactPhone}`}
-                            className="inline-flex items-center gap-1.5 text-sm sm:text-base font-bold text-[#172033] hover:text-[#2878E5] mt-1 transition-colors"
+                            className="inline-flex items-center gap-1 text-sm font-bold text-[#172033] hover:text-[#2878E5] mt-0.5 transition-colors whitespace-nowrap"
                           >
                             <span>{formatPhoneNumber(organization.contactPhone)}</span>
                           </a>
                         ) : (
-                          <p className="text-sm sm:text-base font-bold text-[#172033] mt-1">N/A</p>
+                          <p className="text-sm font-bold text-[#172033] mt-0.5">N/A</p>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Emergency Contact Email */}
-                  <div className="group p-4 sm:p-5 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-amber-50/80 text-amber-600 border border-amber-100 flex-shrink-0">
-                        <Mail className="w-5 h-5" />
+                  <div className="group p-4 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-amber-50/80 text-amber-600 border border-amber-100 flex-shrink-0">
+                        <Mail className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68778D] block">
-                            Emergency Contact Email
+                            Emergency Email
                           </span>
                           {organization.emergencyContactEmail && (
                             <button
@@ -821,17 +805,9 @@ export function OrganizationDetails() {
                               title="Copy Emergency Email"
                             >
                               {copiedKey === "emergencyEmail" ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span className="text-emerald-600 font-semibold text-[11px]">
-                                    Copied
-                                  </span>
-                                </>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
                               ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span className="text-[11px]">Copy</span>
-                                </>
+                                <Copy className="w-3.5 h-3.5" />
                               )}
                             </button>
                           )}
@@ -839,30 +815,31 @@ export function OrganizationDetails() {
                         {organization.emergencyContactEmail ? (
                           <a
                             href={`mailto:${organization.emergencyContactEmail}`}
-                            className="inline-flex items-center gap-1.5 text-sm sm:text-base font-bold text-[#172033] hover:text-[#2878E5] mt-1 break-all transition-colors"
+                            className="inline-flex items-center gap-1 text-sm font-bold text-[#172033] hover:text-[#2878E5] mt-0.5 truncate max-w-full transition-colors"
+                            title={organization.emergencyContactEmail}
                           >
-                            <span>{organization.emergencyContactEmail}</span>
-                            <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 text-[#68778D]" />
+                            <span className="truncate">{organization.emergencyContactEmail}</span>
+                            <ArrowUpRight className="w-3 h-3 flex-shrink-0 text-[#68778D]" />
                           </a>
                         ) : (
-                          <p className="text-sm sm:text-base font-bold text-[#172033] mt-1">N/A</p>
+                          <p className="text-sm font-bold text-[#172033] mt-0.5">N/A</p>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Registration Date */}
-                  <div className="group p-4 sm:p-5 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
-                    <div className="flex items-start gap-3.5">
-                      <div className="p-2.5 rounded-xl bg-violet-50/80 text-violet-600 border border-violet-100 flex-shrink-0">
-                        <Calendar className="w-5 h-5" />
+                  <div className="group p-4 rounded-xl border border-[#E7ECF2] bg-white hover:border-[#2878E5]/40 hover:shadow-subtle transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-violet-50/80 text-violet-600 border border-violet-100 flex-shrink-0">
+                        <Calendar className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#68778D] block">
                           Registration Date
                         </span>
-                        <p className="text-sm sm:text-base font-bold text-[#172033] mt-1">
-                          {formatDate(organization.createdAt)}
+                        <p className="text-sm font-bold text-[#172033] mt-0.5">
+                          {formatDate(organization.createdAt, { hideTime: true, shortMonth: true })}
                         </p>
                       </div>
                     </div>

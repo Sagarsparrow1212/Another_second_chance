@@ -17,7 +17,7 @@ export function Dashboard() {
         <AppNavbar brandName="Another Second Chance" />
         
         {/* Content Container */}
-        <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-8 pt-20 pb-12 max-w-7xl mx-auto">
+        <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-8 pt-20 pb-12 max-w-[1440px] mx-auto">
           <Routes>
             {routes.map(
               ({ layout, pages }) =>
