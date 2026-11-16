@@ -1,72 +1,32 @@
 import React from 'react';
-import './LogoLoader.css';
 
 /**
- * Premium Animated Logo Loader
- * Features:
- * - Liquid fill animation from bottom to top
- * - Smooth gradient wave effect
- * - Pulsing glow
- * - Responsive design
+ * Clean & Modern Minimalist Spinner Loader
  */
 const LogoLoader = ({ size = 'medium', message = 'Loading...' }) => {
-    // Size variants
-    const sizeClasses = {
-        small: 'logo-loader-small',
-        medium: 'logo-loader-medium',
-        large: 'logo-loader-large',
-    };
+  const sizeMap = {
+    small: 'w-6 h-6 border-2',
+    medium: 'w-10 h-10 border-3',
+    large: 'w-14 h-14 border-4',
+  };
 
-    return (
-        <div className="logo-loader-container">
-            <div className={`logo-loader-wrapper ${sizeClasses[size]}`}>
-                {/* Logo container with mask */}
-                <div className="logo-loader-mask">
-                    {/* Background logo (grayscale/outline) */}
-                    <img
-                        src="/img/Logo/HomelyHopeIcon.png"
-                        alt="Loading"
-                        className="logo-loader-bg"
-                    />
+  const spinnerClass = sizeMap[size] || sizeMap.medium;
 
-                    {/* Animated fill layer */}
-                    <div className="logo-loader-fill">
-                        {/* Colored logo that gets revealed */}
-                        <img
-                            src="/img/Logo/HomelyHopeIcon.png"
-                            alt="Loading"
-                            className="logo-loader-colored"
-                        />
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full p-8">
+      {/* Clean Circular Spinner */}
+      <div
+        className={`${spinnerClass} border-blue-600 border-t-transparent rounded-full animate-spin mb-4`}
+      />
 
-                        {/* Wave effect */}
-                        <div className="logo-loader-wave">
-                            <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-                                <path
-                                    d="M0,0 C150,50 350,0 600,50 C850,100 1050,50 1200,50 L1200,120 L0,120 Z"
-                                    className="wave-path"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Glow effect */}
-                    <div className="logo-loader-glow"></div>
-                </div>
-
-                {/* Loading text */}
-                {message && (
-                    <div className="logo-loader-text">
-                        <span className="loading-message">{message}</span>
-                        <span className="loading-dots">
-                            <span className="dot">.</span>
-                            <span className="dot">.</span>
-                            <span className="dot">.</span>
-                        </span>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+      {/* Clean Minimal Message */}
+      {message && (
+        <p className="text-gray-500 text-sm font-medium tracking-wide">
+          {message}
+        </p>
+      )}
+    </div>
+  );
 };
 
 export default LogoLoader;

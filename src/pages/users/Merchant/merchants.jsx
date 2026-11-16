@@ -1,47 +1,112 @@
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
-  Card,
-  CardHeader,
-  CardBody,
-  Typography,
-  Button,
-  IconButton,
-  Input,
-} from "@material-tailwind/react";
-import { Plus, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Download, MoreVertical, Eye, Trash2, Pencil, Store } from "lucide-react";
-import { useState, useEffect, useMemo, useRef } from "react";
+  Store,
+  Plus,
+  Search,
+  Download,
+  MoreVertical,
+  Eye,
+  Pencil,
+  Trash2,
+  Phone,
+  Mail,
+  Calendar,
+  AlertCircle,
+  Copy,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Tag,
+  Building2,
+  Clock,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL_V1 } from "@/configs/api";
+
+const formatPhoneNumber = (value) => {
+  if (!value) return "N/A";
+  const phoneNumber = value.replace(/\D/g, "");
+  const limitedNumber = phoneNumber.slice(0, 10);
+  if (limitedNumber.length === 0) {
+    return value;
+  } else if (limitedNumber.length <= 3) {
+    return `(${limitedNumber}`;
+  } else if (limitedNumber.length <= 6) {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+  } else {
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
+  }
+};
 
 export function Merchants() {
   const navigate = useNavigate();
   const [merchants, setMerchants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expandedRows, setExpandedRows] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("newest");
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [copiedEmail, setCopiedEmail] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const menuRefs = useRef({});
-  const menuElementRef = useRef(null);
-  const itemsPerPage = 10;
+
+  // Stats
+  const [stats, setStats] = useState({
+    total: 0,
+    typesCount: 0,
+    recentCount: 0,
+  });
+
   const abortControllerRef = useRef(null);
   const isMountedRef = useRef(true);
+  const menuRefs = useRef({});
+  const menuElementRef = useRef(null);
+
+  // Fetch summary stats
+  const fetchStats = async () => {
+    try {
+      const sessionData = localStorage.getItem("auth_session");
+      const token = sessionData ? JSON.parse(sessionData).token : null;
+
+      const response = await fetch(`${API_BASE_URL_V1}/merchants?limit=1000`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.success && data.data?.merchants) {
+        const list = data.data.merchants;
+        const total = list.length;
+        const types = new Set(list.map((m) => m.businessType).filter(Boolean)).size;
+
+        // Recent = registered within the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const recentCount = list.filter((m) => new Date(m.createdAt) >= thirtyDaysAgo).length;
+
+        setStats({ total, typesCount: types, recentCount });
+      }
+    } catch (err) {
+      console.warn("Could not fetch merchant stats:", err);
+    }
+  };
 
   const fetchMerchants = async (page = 1, search = "") => {
-    // Cancel previous request if it exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-
-    // Create new AbortController for this request
     abortControllerRef.current = new AbortController();
 
-      try {
-          setLoading(true);
+    try {
+      setLoading(true);
       setError("");
 
       const queryParams = new URLSearchParams({
@@ -50,66 +115,58 @@ export function Merchants() {
       });
 
       if (search.trim()) {
-        queryParams.append('search', search.trim());
-        }
-        
-        // Get token from localStorage
-        const sessionData = localStorage.getItem('auth_session');
-        const token = sessionData ? JSON.parse(sessionData).token : null;
-        
+        queryParams.append("search", search.trim());
+      }
+
+      const sessionData = localStorage.getItem("auth_session");
+      const token = sessionData ? JSON.parse(sessionData).token : null;
+
       const response = await fetch(`${API_BASE_URL_V1}/merchants?${queryParams}`, {
-          signal: abortControllerRef.current.signal,
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-        });
+        signal: abortControllerRef.current.signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch merchants');
+        throw new Error("Failed to fetch merchants");
       }
 
-        const data = await response.json();
-        
-        // Only update state if component is still mounted
-        if (!isMountedRef.current) {
-          return;
-        }
-        
-        if (data.success && data.data.merchants) {
-          setMerchants(data.data.merchants);
-        setTotalPages(data.data.pagination.totalPages);
-        setTotalItems(data.data.pagination.totalItems);
-        } else {
-        throw new Error(data.message || 'Failed to fetch merchants');
-        }
+      const data = await response.json();
+
+      if (data.success) {
+        setMerchants(data.data.merchants || []);
+        setTotalPages(data.data.pagination?.totalPages || 1);
+        setTotalItems(data.data.pagination?.totalItems || (data.data.merchants || []).length);
+      } else {
+        throw new Error(data.message || "Failed to fetch merchants");
+      }
     } catch (err) {
-      // Don't show error if request was aborted
-      if (err.name === 'AbortError') {
-          return;
-        }
-      console.error('Fetch merchants error:', err);
+      if (err.name === "AbortError") return;
+      console.error("Fetch merchants error:", err);
       if (isMountedRef.current) {
-        setError(err.message || 'An error occurred while fetching merchants');
+        setError(err.message || "An error occurred while fetching merchants");
         setMerchants([]);
       }
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
       }
-    };
+    }
+  };
 
-  // Combined effect for page and search changes
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   useEffect(() => {
     isMountedRef.current = true;
-
-    // Debounce search, but fetch immediately for page changes
     const timer = setTimeout(() => {
       if (isMountedRef.current) {
         fetchMerchants(currentPage, searchQuery);
       }
-    }, searchQuery ? 500 : 0); // Only debounce if there's a search query
+    }, searchQuery ? 400 : 0);
 
     return () => {
       clearTimeout(timer);
@@ -117,9 +174,8 @@ export function Merchants() {
         abortControllerRef.current.abort();
       }
     };
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, itemsPerPage]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -129,33 +185,11 @@ export function Merchants() {
     };
   }, []);
 
-  const toggleRow = (id) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
-  };
-
-  // Since we're fetching from API with pagination, we use merchants directly
-  const paginatedMerchants = merchants;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  // Close menu when clicking outside and handle scroll lock
+  // Close context menu on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openMenuId && menuElementRef.current) {
-        // Check if click is outside the menu
         if (!menuElementRef.current.contains(event.target)) {
-          // Also check if click is not on the button that opened it
           const buttonElement = menuRefs.current[openMenuId];
           if (buttonElement && !buttonElement.contains(event.target)) {
             setOpenMenuId(null);
@@ -164,715 +198,567 @@ export function Merchants() {
       }
     };
 
-    // Lock scroll when menu is open
     if (openMenuId) {
-      document.body.style.overflow = "hidden";
-      // Use setTimeout to avoid immediate closure when opening menu
-      const timeoutId = setTimeout(() => {
-        window.addEventListener("click", handleClickOutside, true);
-        window.addEventListener("contextmenu", handleClickOutside, true);
-      }, 0);
-
-      return () => {
-        clearTimeout(timeoutId);
-        window.removeEventListener("click", handleClickOutside, true);
-        window.removeEventListener("contextmenu", handleClickOutside, true);
-        document.body.style.overflow = "auto";
-      };
-    } else {
-      document.body.style.overflow = "auto";
+      window.addEventListener("click", handleClickOutside, true);
+      return () => window.removeEventListener("click", handleClickOutside, true);
     }
   }, [openMenuId]);
 
+  const handleCopyEmail = (email, e) => {
+    e.stopPropagation();
+    if (!email) return;
+    navigator.clipboard.writeText(email);
+    setCopiedEmail(email);
+    setTimeout(() => setCopiedEmail(null), 2000);
+  };
+
   const handleDelete = async (merchantId) => {
-    if (!window.confirm('Are you sure you want to delete this merchant? This action cannot be undone.')) {
+    if (!window.confirm("Are you sure you want to delete this merchant? This action cannot be undone.")) {
       return;
     }
 
     try {
-      setDeletingId(merchantId);
       setOpenMenuId(null);
-      
-      // Get token from localStorage
-      const sessionData = localStorage.getItem('auth_session');
+      const sessionData = localStorage.getItem("auth_session");
       const token = sessionData ? JSON.parse(sessionData).token : null;
-      
+
       const response = await fetch(`${API_BASE_URL_V1}/merchants/${merchantId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete merchant');
-      }
-
-      // Refresh the list
+      if (!response.ok) throw new Error("Failed to delete merchant");
       fetchMerchants(currentPage, searchQuery);
+      fetchStats();
     } catch (error) {
-      console.error('Error deleting merchant:', error);
-      alert('Failed to delete merchant. Please try again.');
-    } finally {
-      setDeletingId(null);
+      console.error("Error deleting merchant:", error);
+      alert("Failed to delete merchant.");
     }
-  };
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    setExpandedRows(new Set()); // Reset expanded rows when changing page
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleExport = async () => {
     try {
-      // Fetch all merchants for export (without pagination)
-      // Get token from localStorage
-      const sessionData = localStorage.getItem('auth_session');
+      const sessionData = localStorage.getItem("auth_session");
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/merchants?limit=1000`, {
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
       });
       const data = await response.json();
+      const list = data.success ? data.data.merchants : merchants;
 
-      const merchantsToExport = data.success ? data.data.merchants : merchants;
+      const csvContent = [
+        ["Business Name", "Email", "Business Type", "Phone", "Registration Date"],
+        ...list.map((m) => [
+          `"${m.businessName || ""}"`,
+          `"${m.email || ""}"`,
+          `"${m.businessType || ""}"`,
+          `"${m.phone ? formatPhoneNumber(m.phone) : ""}"`,
+          `"${m.createdAt ? new Date(m.createdAt).toLocaleDateString() : ""}"`,
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
 
-    // Export functionality - can be CSV, Excel, etc.
-    const csvContent = [
-      ['Business Name', 'Email', 'Business Type', 'Phone', 'Created'],
-        ...merchantsToExport.map(merchant => [
-        merchant.businessName,
-        merchant.email,
-        merchant.businessType,
-        merchant.phone || 'N/A',
-        merchant.createdAt
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `merchants_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `merchants_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (err) {
-      console.error('Export error:', err);
-      setError('Failed to export merchants');
+      console.error("Export error:", err);
+      setError("Failed to export merchants");
     }
   };
 
+  // Distinct business types for filter dropdown
+  const availableTypes = useMemo(() => {
+    const set = new Set();
+    merchants.forEach((m) => {
+      if (m.businessType) set.add(m.businessType);
+    });
+    return Array.from(set);
+  }, [merchants]);
+
+  // Frontend filter & sort
+  const filteredMerchants = useMemo(() => {
+    let result = [...merchants];
+    if (typeFilter !== "ALL") {
+      result = result.filter((m) => m.businessType === typeFilter);
+    }
+
+    if (sortBy === "name_asc") {
+      result.sort((a, b) => (a.businessName || "").localeCompare(b.businessName || ""));
+    } else if (sortBy === "name_desc") {
+      result.sort((a, b) => (b.businessName || "").localeCompare(a.businessName || ""));
+    } else if (sortBy === "oldest") {
+      result.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    } else {
+      // newest
+      result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
+
+    return result;
+  }, [merchants, typeFilter, sortBy]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent",  }}>
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-2">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                <Store className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-              </div>
-              <Typography variant="h4" className="text-gray-900 font-bold text-xl sm:text-2xl truncate">
-                Merchants
-              </Typography>
-            </div>
-            <Button 
-              variant="gradient" 
-              className="flex items-center justify-center gap-2 font-normal text-xs sm:text-sm normal-case w-full sm:w-auto flex-shrink-0"
-              onClick={() => navigate("/dashboard/merchants/register")}
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Merchant</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
+    <div className="space-y-6">
+      {/* 1. Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-enterprise-softBlue border border-[#2878E5]/20 flex items-center justify-center text-[#2878E5] flex-shrink-0">
+            <Store className="w-5 h-5" />
           </div>
-          <Typography variant="small" className="text-gray-600 text-xs sm:text-sm">
-            View and manage all registered merchants
-          </Typography>
-        </div>
-
-      {/* Info and Search Section */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-4">
-        {/* Search Field */}
-        <div className="w-full md:flex-1 md:max-w-md">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Search here..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900 !pr-10"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-              containerProps={{
-                className: "min-w-0"
-              }}
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-enterprise-textPrimary tracking-tight">
+              Merchants
+            </h1>
+            <p className="text-xs sm:text-sm text-enterprise-textSecondary mt-0.5">
+              View and manage all registered merchants and vendors
+            </p>
           </div>
         </div>
 
-        {/* Total Count and Export - Right Aligned (Desktop: In same row) */}
-        <div className="flex items-center gap-4 justify-end md:justify-start">
-          <Typography variant="small" color="blue-gray" className="font-normal whitespace-nowrap">
-            Total: {totalItems}
-          </Typography>
-          <Button
-            variant="outlined"
-            size="sm"
-            className="flex items-center gap-2 normal-case"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+        <button
+          onClick={() => navigate("/dashboard/merchants/register")}
+          className="bg-[#2878E5] hover:bg-[#1d6cd4] text-white flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 flex-shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Merchant</span>
+        </button>
+      </div>
+
+      {/* 2. Merchant Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 w-full min-w-0">
+        {/* Total Merchants */}
+        <div className="bg-white rounded-xl border border-[#E7ECF2] p-5 shadow-card hover:shadow-elevated transition-all duration-200 min-w-0 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] sm:text-xs font-semibold text-enterprise-muted uppercase tracking-wider line-clamp-1">
+              Total Merchants
+            </span>
+            <div className="p-2 rounded-lg bg-enterprise-softBlue text-[#2878E5] border border-[#2878E5]/20 flex-shrink-0">
+              <Store className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold text-enterprise-textPrimary tracking-tight">
+              {stats.total || totalItems}
+            </span>
+            <span className="text-xs text-enterprise-muted">registered</span>
+          </div>
+        </div>
+
+        {/* Business Types */}
+        <div className="bg-white rounded-xl border border-[#E7ECF2] p-5 shadow-card hover:shadow-elevated transition-all duration-200 min-w-0 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] sm:text-xs font-semibold text-enterprise-muted uppercase tracking-wider line-clamp-1">
+              Business Types
+            </span>
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex-shrink-0">
+              <Tag className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold text-enterprise-textPrimary tracking-tight">
+              {stats.typesCount || (availableTypes.length || 1)}
+            </span>
+            <span className="text-xs text-emerald-600 font-medium">categories</span>
+          </div>
+        </div>
+
+        {/* Recently Registered */}
+        <div className="bg-white rounded-xl border border-[#E7ECF2] p-5 shadow-card hover:shadow-elevated transition-all duration-200 min-w-0 flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[11px] sm:text-xs font-semibold text-enterprise-muted uppercase tracking-wider line-clamp-1">
+              Recently Registered
+            </span>
+            <div className="p-2 rounded-lg bg-purple-50 text-purple-600 border border-purple-200/60 flex-shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold text-enterprise-textPrimary tracking-tight">
+              {stats.recentCount}
+            </span>
+            <span className="text-xs text-purple-600 font-medium">last 30 days</span>
+          </div>
         </div>
       </div>
-      <Card className="border border-blue-gray-200 shadow-sm">
-        <CardBody className="px-0 pt-0 pb-2">
-            {error && (
-              <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-                <Typography color="red" className="text-sm">
-                  {error}
-                </Typography>
-              </div>
-            )}
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="flex items-center justify-center">
-                <svg
-                  className="animate-spin h-8 w-8 text-blue-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-              <Typography color="blue-gray" className="mt-4">Loading merchants...</Typography>
-            </div>
-          ) : paginatedMerchants.length === 0 ? (
-            <div className="p-8 text-center">
-              <Typography color="blue-gray">
-                {searchQuery ? "No merchants found matching your search" : "No merchants found"}
-              </Typography>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-scroll">
-                <table className="w-full min-w-[640px] table-auto cursor-pointer-table">
-                  <thead>
-                    <tr>
-                      {["Business Name", "Email", "Business Type", "Phone", "Created", "Actions"].map((el) => (
-                        <th
-                          key={el}
-                          className="border-b border-blue-gray-400 py-3 px-5 text-left"
-                        >
-                          <Typography
-                            variant="small"
-                            className="text-[13px] font-bold uppercase text-blue-gray-400"
-                          >
-                            {el}
-                          </Typography>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedMerchants.map((merchant, key) => {
-                      const className = `py-3 px-5 ${
-                        key === paginatedMerchants.length - 1
-                          ? ""
-                          : "border-b border-blue-gray-200"
-                      }`;
 
-                      const isMenuOpen = openMenuId === merchant.id;
-                      return (
-                        <tr 
-                          key={`${merchant.id}-${key}`}
-                          onClick={() =>      navigate(`/dashboard/merchants/${merchant.id}`)}
-                          className={isMenuOpen ? "bg-blue-50 transition-colors duration-200" : ""}
-                        >
-                          <td className={className}>
-                            <Typography
-                              variant="small"
-                              color="blue-gray"
-                              className="text-sm font-semibold"
-                            >
-                              {merchant.businessName}
-                            </Typography>
-                          </td>
-                          <td className={className}>
-                            <Typography className="text-sm font-normal text-blue-gray-500">
-                              {merchant.email}
-                            </Typography>
-                          </td>
-                          <td className={className}>
-                            <Typography className="text-sm font-semibold text-blue-gray-600">
-                              {merchant.businessType}
-                            </Typography>
-                          </td>
-                          <td className={className}>
-                            <Typography className="text-sm font-normal text-blue-gray-500">
-                              {merchant.phone || "N/A"}
-                            </Typography>
-                          </td>
-                          <td className={className}>
-                            <Typography className="text-sm font-semibold text-blue-gray-600">
-                              {merchant.createdAt}
-                            </Typography>
-                          </td>
-                          <td className={className}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="relative inline-block" 
-                                ref={(el) => {
-                                  if (el) menuRefs.current[merchant.id] = el;
-                                }}
-                              >
-                                <IconButton
-                                  size="sm"
-                                  variant="text"
-                                  color={openMenuId === merchant.id ? "blue" : "gray"}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    if (openMenuId === merchant.id) {
-                                      setOpenMenuId(null);
-                                    } else {
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      const menuWidth = 192; // w-48 = 192px
-                                      const menuHeight = 140; // Approximate menu height
-                                      const viewportHeight = window.innerHeight;
-                                      const viewportWidth = window.innerWidth;
-                                      
-                                      // Calculate available space below and above
-                                      const spaceBelow = viewportHeight - rect.bottom;
-                                      const spaceAbove = rect.top;
-                                      
-                                      // Determine vertical position (above or below) using clientY
-                                      const showAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-                                      const topPosition = showAbove 
-                                        ? rect.top - menuHeight - 8
-                                        : rect.bottom + 8;
-                                      
-                                      // Determine horizontal position (right-aligned to button, but adjust if needed)
-                                      // Use clientX for fixed positioning
-                                      let leftPosition = rect.right - menuWidth;
-                                      
-                                      // If menu would go off the left edge, align to left edge of button
-                                      if (leftPosition < 0) {
-                                        leftPosition = rect.left;
-                                      }
-                                      
-                                      // If menu would go off the right edge, adjust
-                                      if (leftPosition + menuWidth > viewportWidth) {
-                                        leftPosition = viewportWidth - menuWidth - 8;
-                                      }
-                                      
-                                      // Ensure menu doesn't go off screen
-                                      if (leftPosition < 8) {
-                                        leftPosition = 8;
-                                      }
-                                      
-                                      setMenuPosition({
-                                        top: topPosition,
-                                        left: leftPosition,
-                                        buttonRight: rect.right,
-                                        buttonTop: rect.top,
-                                        buttonBottom: rect.bottom,
-                                        showAbove: showAbove
-                                      });
-                                      setOpenMenuId(merchant.id);
-                                    }
-                                  }}
-                                  className={`rounded-lg transition-colors ${openMenuId === merchant.id ? "bg-blue-100" : ""}`}
-                                >
-                                  <MoreVertical className={`h-5 w-5 ${openMenuId === merchant.id ? "text-blue-600" : ""}`} />
-                                </IconButton>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-3 p-4">
-                {/* Header Row - Only shown once at top */}
-                <div className="bg-blue-gray-50 rounded-t-lg border border-b-0 border-blue-gray-100 px-4 py-2">
-                  <div className="flex items-center justify-between">
-                    <Typography
-                      variant="small"
-                      className="text-xs font-bold uppercase text-blue-gray-600"
-                    >
-                      Business Name
-                    </Typography>
-                    <div className="flex items-center gap-8">
-                      {/* Remove Status header */}
-                      <div className="w-6"></div> {/* Spacer for expand icon */}
-                    </div>
-                  </div>
-                </div>
-
-                {paginatedMerchants.map((merchant, key) => {
-                  const isExpanded = expandedRows.has(`${merchant.id}-${key}`);
-                  
-                  return (
-                    <div
-                      key={`${merchant.id}-${key}`}
-                      
-                      className="bg-white rounded-lg border border-blue-gray-100 shadow-sm overflow-hidden"
-                    >
-                      {/* Main Row - Title and Expand Only - Entire Row Clickable */}
-                      <div 
-                        className="flex items-center gap-2 p-4 border-b border-blue-gray-200 cursor-pointer hover:bg-blue-gray-50/50 transition-colors"
-                        onClick={() => toggleRow(`${merchant.id}-${key}`)}
-                      >
-                        {/* Business Name - Can wrap if too long */}
-                        <div className="flex-1 min-w-0">
-                          <Typography
-                            variant="small"
-                            color="blue-gray"
-                            className="text-sm font-semibold break-words"
-                            style={{ 
-                              maxWidth: merchant.businessName.length > 25 ? '200px' : 'none',
-                              lineHeight: '1.5'
-                            }}
-                          >
-                            {merchant.businessName}
-                          </Typography>
-                        </div>
-                        {/* Expand/Collapse Icon */}
-                        <div className="flex-shrink-0 ml-1 pointer-events-none">
-                          {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 text-blue-gray-600" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-blue-gray-600" />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Expanded Details - Hidden by Default */}
-                      {isExpanded && (
-                        <div className="bg-blue-gray-50/30">
-                          {/* Email Field */}
-                          <div className="px-4 py-3 border-b border-blue-gray-200">
-                            <div className="flex items-center justify-between">
-                              <Typography
-                                variant="small"
-                                className="text-xs font-normal text-blue-gray-500"
-                              >
-                                Email
-                              </Typography>
-                              <Typography className="text-sm font-normal text-blue-gray-900">
-                                {merchant.email}
-                              </Typography>
-                            </div>
-                          </div>
-                          
-                          {/* Business Type Field */}
-                          <div className="px-4 py-3 border-b border-blue-gray-200">
-                            <div className="flex items-center justify-between">
-                              <Typography
-                                variant="small"
-                                className="text-xs font-normal text-blue-gray-500"
-                              >
-                                Business Type
-                              </Typography>
-                              <Typography className="text-sm font-semibold text-blue-gray-900">
-                                {merchant.businessType}
-                              </Typography>
-                            </div>
-                          </div>
-                          
-                          {/* Phone Field */}
-                          <div className="px-4 py-3 border-b border-blue-gray-200">
-                            <div className="flex items-center justify-between">
-                              <Typography
-                                variant="small"
-                                className="text-xs font-normal text-blue-gray-500"
-                              >
-                                Phone
-                              </Typography>
-                              <Typography className="text-sm font-normal text-blue-gray-900">
-                                {merchant.phone || "N/A"}
-                              </Typography>
-                            </div>
-                          </div>
-                          
-                          {/* Created Field */}
-                          <div className="px-4 py-3 border-b border-blue-gray-200">
-                            <div className="flex items-center justify-between">
-                              <Typography
-                                variant="small"
-                                className="text-xs font-normal text-blue-gray-500"
-                              >
-                                Created
-                              </Typography>
-                              <Typography className="text-sm font-semibold text-blue-gray-900">
-                                {merchant.createdAt}
-                              </Typography>
-                            </div>
-                          </div>
-                          
-                          {/* Actions Buttons */}
-                          <div className="px-4 py-4 border-t border-blue-gray-200">
-                            {/* Action Buttons Row - View, Edit, Delete */}
-                            <div className="flex items-center gap-2">
-                              {/* View Button */}
-                              <Button
-                                size="sm"
-                                variant="outlined"
-                                className="flex items-center justify-center gap-1.5 px-3 py-2 border border-gray-300 bg-white hover:bg-gray-50 normal-case text-gray-700 rounded-lg flex-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/dashboard/merchants/${merchant.id}`);
-                                }}
-                              >
-                                <Eye className="h-4 w-4 text-gray-600" />
-                                <span className="text-sm font-medium">View</span>
-                              </Button>
-                              
-                              {/* Edit Button */}
-                              <Button
-                                size="sm"
-                                variant="outlined"
-                                className="flex items-center justify-center gap-1.5 px-3 py-2 border border-gray-300 bg-white hover:bg-gray-50 normal-case text-gray-700 rounded-lg flex-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/dashboard/merchants/${merchant.id}/edit`);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4 text-gray-600" />
-                                <span className="text-sm font-medium">Edit</span>
-                              </Button>
-                              
-                              {/* Delete Button (Icon-only) */}
-                              <IconButton
-                                size="sm"
-                                variant="outlined"
-                                className="border border-red-300 bg-white hover:bg-red-50 rounded-lg w-10 h-10 flex-shrink-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(merchant.id);
-                                }}
-                                disabled={deletingId === merchant.id}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </IconButton>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Pagination */}
-              {totalItems > itemsPerPage && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4">
-                  <Typography variant="small" color="blue-gray" className="font-normal text-center sm:text-left">
-                    Showing {startIndex + 1} to {endIndex} of {totalItems} entries
-                  </Typography>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    {/* First Button */}
-                    <Button
-                      variant="text"
-                      size="sm"
-                      onClick={() => handlePageChange(1)}
-                      disabled={currentPage === 1}
-                      className={`min-w-[50px] text-xs normal-case ${
-                        currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      First
-                    </Button>
-                    
-                    {/* Page Numbers */}
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                        // If total pages is 2 or less, show all pages
-                        if (totalPages <= 2) {
-                          return (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? "filled" : "text"}
-                              size="sm"
-                              onClick={() => handlePageChange(page)}
-                              className={`min-w-[32px] ${
-                                currentPage === page
-                                  ? "bg-blue-gray-900 text-white"
-                                  : "text-blue-gray-600"
-                              }`}
-                            >
-                              {page}
-                            </Button>
-                          );
-                        }
-                        // Show first page, last page, current page, and pages around current
-                        if (
-                          page === 1 ||
-                          page === totalPages ||
-                          (page >= currentPage - 1 && page <= currentPage + 1)
-                        ) {
-                          return (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? "filled" : "text"}
-                              size="sm"
-                              onClick={() => handlePageChange(page)}
-                              className={`min-w-[32px] ${
-                                currentPage === page
-                                  ? "bg-blue-gray-900 text-white"
-                                  : "text-blue-gray-600"
-                              }`}
-                            >
-                              {page}
-                            </Button>
-                          );
-                        } else if (page === currentPage - 2 || page === currentPage + 2) {
-                          return (
-                            <Typography key={page} variant="small" className="px-2 text-blue-gray-400">
-                              ...
-                            </Typography>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
-
-                    {/* Last Button */}
-                    <Button
-                      variant="text"
-                      size="sm"
-                      onClick={() => handlePageChange(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className={`min-w-[60px] text-xs normal-case ${
-                        currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      Last
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardBody>
-      </Card>
-
-      {/* Context Menu Overlay */}
-      {openMenuId && (
-        <>
-          {/* Backdrop - transparent overlay to catch clicks */}
-          <div 
-            className="fixed inset-0 z-[9998] bg-transparent"
-            onClick={() => setOpenMenuId(null)}
-          />
-          {/* Menu */}
-          <div 
-            ref={menuElementRef}
-            className="fixed z-[9999] w-48 bg-white rounded-lg shadow-xl border-2 border-blue-200 py-1"
-            style={{
-              top: `${menuPosition.top}px`,
-              left: `${menuPosition.left}px`
+      {/* 3. Search and Toolbar */}
+      <div className="bg-white rounded-xl border border-[#E7ECF2] p-3 sm:p-4 shadow-card flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search input */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-enterprise-muted pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by business name, email, or phone..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
             }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Merchant name header */}
-            {(() => {
-              const merchant = merchants.find(m => m.id === openMenuId);
-              return merchant ? (
-                <div className="px-4 py-2 border-b border-gray-200 bg-blue-50">
-                  <Typography variant="small" className="text-xs font-semibold text-blue-gray-700 truncate">
-                    {merchant.businessName}
-                  </Typography>
-                </div>
-              ) : null;
-            })()}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const currentMenuId = openMenuId;
-                setOpenMenuId(null);
-                const merchant = merchants.find(m => m.id === currentMenuId);
-                if (merchant) {
-                  navigate(`/dashboard/merchants/${merchant.id}`);
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors cursor-pointer"
+            className="w-full pl-9.5 pr-4 py-2 text-xs sm:text-sm bg-[#F7F9FC] border border-[#E7ECF2] rounded-lg text-enterprise-textPrimary placeholder:text-enterprise-muted focus:bg-white focus:outline-none focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 transition-all duration-150"
+          />
+        </div>
+
+        {/* Filter controls */}
+        <div className="flex flex-wrap items-center gap-2.5 justify-end">
+          {/* Business Type filter */}
+          <div className="flex items-center gap-1.5 bg-[#F7F9FC] border border-[#E7ECF2] rounded-lg px-2.5 py-1.5 text-xs text-enterprise-textSecondary">
+            <Filter className="w-3.5 h-3.5 text-enterprise-muted" />
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="bg-transparent text-xs font-medium text-enterprise-textPrimary focus:outline-none cursor-pointer"
             >
-              <Eye className="h-4 w-4" />
-              View Details
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const currentMenuId = openMenuId;
-                setOpenMenuId(null);
-                const merchant = merchants.find(m => m.id === currentMenuId);
-                if (merchant) {
-                  navigate(`/dashboard/merchants/${merchant.id}/edit`);
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors cursor-pointer"
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const currentMenuId = openMenuId;
-                if (currentMenuId) {
-                  setOpenMenuId(null);
-                  handleDelete(currentMenuId);
-                }
-              }}
-              disabled={deletingId === openMenuId}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <Trash2 className="h-4 w-4" />
-              {deletingId === openMenuId ? 'Deleting...' : 'Delete'}
-            </button>
+              <option value="ALL">All Types</option>
+              {availableTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </div>
-        </>
-      )}
+
+          {/* Sort order */}
+          <div className="bg-[#F7F9FC] border border-[#E7ECF2] rounded-lg px-2.5 py-1.5 text-xs text-enterprise-textSecondary">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent text-xs font-medium text-enterprise-textPrimary focus:outline-none cursor-pointer"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name_asc">Name (A-Z)</option>
+              <option value="name_desc">Name (Z-A)</option>
+            </select>
+          </div>
+
+          {/* Total Badge */}
+          <div className="hidden sm:inline-flex px-2.5 py-1.5 text-xs font-medium text-enterprise-textSecondary bg-slate-50 border border-[#E7ECF2] rounded-lg">
+            Total: <span className="font-bold text-enterprise-textPrimary ml-1">{totalItems}</span>
+          </div>
+
+          {/* Export Button */}
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-enterprise-textPrimary bg-white border border-[#E7ECF2] hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-subtle transition-all duration-150"
+          >
+            <Download className="w-3.5 h-3.5 text-enterprise-textSecondary" />
+            <span>Export</span>
+          </button>
+        </div>
       </div>
+
+      {/* 4. Merchant Data Table */}
+      <div className="bg-white rounded-xl border border-[#E7ECF2] shadow-card overflow-hidden">
+        {error && (
+          <div className="p-4 bg-rose-50 border-b border-rose-200 text-rose-700 text-xs sm:text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="p-8 space-y-4">
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-3 border-[#2878E5] border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-center text-xs font-medium text-enterprise-muted">
+              Loading merchants...
+            </p>
+          </div>
+        ) : filteredMerchants.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 rounded-xl bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center mx-auto mb-3 border border-[#2878E5]/20">
+              <Store className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-enterprise-textPrimary">No merchants found</h3>
+            <p className="text-xs text-enterprise-textSecondary max-w-sm mx-auto mt-1">
+              {searchQuery
+                ? `No merchants match "${searchQuery}". Try adjusting your keywords.`
+                : "No merchants have registered yet."}
+            </p>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="mt-4 text-xs font-semibold text-[#2878E5] hover:underline"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Business Name
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Email Address
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Business Type
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Phone Number
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Registration Date
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E7ECF2]">
+                  {filteredMerchants.map((merchant) => {
+                    const id = merchant.id || merchant._id;
+                    const isMenuOpen = openMenuId === id;
+
+                    return (
+                      <tr
+                        key={id}
+                        onClick={() => navigate(`/dashboard/merchants/${id}`)}
+                        className={`group cursor-pointer transition-colors duration-150 ${
+                          isMenuOpen ? "bg-enterprise-softBlue/30" : "hover:bg-slate-50/80"
+                        }`}
+                      >
+                        {/* 1. Business Name */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-xs border border-[#2878E5]/20 flex-shrink-0 group-hover:scale-102 transition-transform">
+                              {merchant.businessName
+                                ? merchant.businessName.charAt(0).toUpperCase()
+                                : "M"}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-semibold text-enterprise-textPrimary group-hover:text-[#2878E5] transition-colors truncate">
+                                {merchant.businessName}
+                              </p>
+                              <p className="text-[11px] text-enterprise-muted truncate">
+                                {merchant.contactPerson || "Merchant Vendor"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 2. Email */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-1.5 group/email">
+                            <span className="text-xs font-medium text-enterprise-textSecondary truncate max-w-[200px]">
+                              {merchant.email || "N/A"}
+                            </span>
+                            {merchant.email && (
+                              <button
+                                onClick={(e) => handleCopyEmail(merchant.email, e)}
+                                title="Copy Email"
+                                className="opacity-0 group-hover/email:opacity-100 p-1 hover:bg-slate-100 rounded text-enterprise-muted hover:text-enterprise-textPrimary transition-all"
+                              >
+                                {copiedEmail === merchant.email ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 3. Business Type */}
+                        <td className="py-3.5 px-5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-enterprise-textPrimary border border-slate-200">
+                            {merchant.businessType || "Other"}
+                          </span>
+                        </td>
+
+                        {/* 4. Phone Number */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-enterprise-textSecondary">
+                            <Phone className="w-3.5 h-3.5 text-enterprise-muted" />
+                            <span>{formatPhoneNumber(merchant.phone)}</span>
+                          </div>
+                        </td>
+
+                        {/* 5. Registration Date */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-1.5 text-xs text-enterprise-muted">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>
+                              {merchant.createdAt
+                                ? new Date(merchant.createdAt).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })
+                                : "N/A"}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* 6. Contextual Actions */}
+                        <td className="py-3.5 px-5 text-right">
+                          <div
+                            className="flex items-center justify-end gap-1.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div
+                              className="relative"
+                              ref={(el) => {
+                                if (el) menuRefs.current[id] = el;
+                              }}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (openMenuId === id) {
+                                    setOpenMenuId(null);
+                                  } else {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const menuWidth = 160;
+                                    const menuHeight = 120;
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    const showAbove =
+                                      spaceBelow < menuHeight && rect.top > spaceBelow;
+
+                                    setMenuPosition({
+                                      top: showAbove ? rect.top - menuHeight - 6 : rect.bottom + 6,
+                                      left: Math.max(8, rect.right - menuWidth),
+                                    });
+                                    setOpenMenuId(id);
+                                  }
+                                }}
+                                className="p-1 rounded-md text-enterprise-muted hover:text-enterprise-textPrimary hover:bg-slate-100 transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination & Rows Per Page Toolbar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 bg-[#F7F9FC] border-t border-[#E7ECF2]">
+              <div className="flex items-center gap-3 text-xs text-enterprise-textSecondary">
+                <span>
+                  Showing{" "}
+                  <span className="font-semibold text-enterprise-textPrimary">
+                    {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-enterprise-textPrimary">
+                    {Math.min(currentPage * itemsPerPage, totalItems)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-enterprise-textPrimary">{totalItems}</span>{" "}
+                  merchants
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-[#E7ECF2]">
+                  <span className="text-enterprise-muted">Rows:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-[#E7ECF2] rounded px-1.5 py-0.5 text-xs text-enterprise-textPrimary font-medium focus:outline-none"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Prev / Next Page Buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-lg border border-[#E7ECF2] bg-white text-enterprise-textSecondary hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="px-3 py-1 text-xs font-semibold text-enterprise-textPrimary bg-white border border-[#E7ECF2] rounded-lg">
+                  {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="p-1.5 rounded-lg border border-[#E7ECF2] bg-white text-enterprise-textSecondary hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Floating Action Menu dropdown */}
+      {openMenuId && (
+        <div
+          ref={menuElementRef}
+          style={{
+            position: "fixed",
+            top: `${menuPosition.top}px`,
+            left: `${menuPosition.left}px`,
+            zIndex: 9999,
+          }}
+          className="w-40 bg-white rounded-xl shadow-floating border border-[#E7ECF2] py-1 text-xs animate-in fade-in zoom-in-95 duration-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              navigate(`/dashboard/merchants/${openMenuId}`);
+              setOpenMenuId(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-enterprise-textPrimary hover:bg-slate-50 transition-colors font-medium text-left"
+          >
+            <Eye className="w-3.5 h-3.5 text-enterprise-muted" />
+            View Merchant
+          </button>
+          <button
+            onClick={() => {
+              navigate(`/dashboard/merchants/${openMenuId}/edit`);
+              setOpenMenuId(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-enterprise-textPrimary hover:bg-slate-50 transition-colors font-medium text-left"
+          >
+            <Pencil className="w-3.5 h-3.5 text-enterprise-muted" />
+            Edit Merchant
+          </button>
+          <div className="border-t border-[#E7ECF2] my-1" />
+          <button
+            onClick={() => handleDelete(openMenuId)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium text-left"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete Merchant
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -252,38 +252,37 @@ export function DonorDetails() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent" }}>
         {/* Header Section */}
-        <div className="bg-white rounded-2xl shadow-md p-3 mb-6">
+        <div className="bg-white rounded-xl border border-[#E7ECF2] shadow-card p-5 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate("/dashboard/donors")}
-                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-2 text-enterprise-textSecondary hover:text-enterprise-textPrimary transition-colors px-2.5 py-1.5 rounded-lg hover:bg-slate-50 border border-[#E7ECF2] text-xs font-semibold"
               >
-                <ArrowLeftIcon className="w-5 h-5" />
-                <span className="hidden sm:inline font-medium">Back</span>
+                <ArrowLeftIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Back</span>
               </button>
-              <div className="w-px h-8 bg-gray-300" />
+              <div className="w-px h-6 bg-[#E7ECF2]" />
               <div>
-                <Typography variant="h5" className="text-gray-900 font-bold">
+                <Typography variant="h5" className="text-enterprise-textPrimary font-bold">
                   {donor.name || donor.fullName}
                 </Typography>
-                <Typography variant="small" className="text-gray-500">
-                  Donor Details
+                <Typography variant="small" className="text-enterprise-textSecondary text-xs">
+                  Donor Profile and Contribution Details
                 </Typography>
               </div>
             </div>
             <div className="flex items-center gap-3">
-
               <Button
                 size="sm"
                 variant="outlined"
-                className="flex items-center gap-2 normal-case"
+                className="flex items-center gap-2 normal-case text-xs font-semibold border-[#E7ECF2] text-enterprise-textPrimary hover:bg-slate-50 shadow-subtle"
                 onClick={() => navigate(`/dashboard/donors/${id}/edit`)}
               >
-                <PencilIcon className="w-4 h-4" />
+                <PencilIcon className="w-3.5 h-3.5 text-enterprise-muted" />
                 Edit
               </Button>
             </div>
@@ -291,13 +290,13 @@ export function DonorDetails() {
         </div>
 
         {/* Tabs Section */}
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#E7ECF2] shadow-card overflow-hidden">
           <Tabs value={activeTab} className="min-h-[600px]">
             <div className="overflow-x-auto">
               <TabsHeader
-                className="rounded-none border-b border-blue-gray-100 bg-gray-50/50 px-2 sm:px-4 md:px-6 pt-4 pb-0 w-full min-w-max"
+                className="rounded-none border-b border-[#E7ECF2] bg-[#F7F9FC] px-2 sm:px-4 md:px-6 pt-2 pb-0 w-full min-w-max"
                 indicatorProps={{
-                  className: "bg-transparent border-b-2 border-blue-600 shadow-none rounded-none",
+                  className: "bg-transparent border-b-2 border-[#2878E5] shadow-none rounded-none",
                 }}
               >
                 {tabsData.map(({ label, value, icon: Icon }) => {
@@ -340,61 +339,61 @@ export function DonorDetails() {
                 <div className="space-y-6">
                   {/* Gender and Preferred Donation Type */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Gender</label>
+                    <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                      <label className="block text-enterprise-muted text-xs mb-1.5 font-semibold uppercase tracking-wider">Gender</label>
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <UserIcon className="w-4 h-4 text-blue-600" />
+                        <div className="p-1.5 bg-enterprise-softBlue text-[#2878E5] rounded-lg">
+                          <UserIcon className="w-4 h-4" />
                         </div>
-                        <p className="text-gray-900 font-semibold text-lg">{donor.gender || 'N/A'}</p>
+                        <p className="text-enterprise-textPrimary font-semibold text-base">{donor.gender || 'N/A'}</p>
                       </div>
                     </div>
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Preferred Donation Type</label>
+                    <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                      <label className="block text-enterprise-muted text-xs mb-1.5 font-semibold uppercase tracking-wider">Preferred Donation Type</label>
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <GiftIcon className="w-4 h-4 text-blue-600" />
+                        <div className="p-1.5 bg-enterprise-softBlue text-[#2878E5] rounded-lg">
+                          <GiftIcon className="w-4 h-4" />
                         </div>
-                        <p className="text-gray-900 font-semibold text-lg">{donor.preferredDonationType || 'Not specified'}</p>
+                        <p className="text-enterprise-textPrimary font-semibold text-base">{donor.preferredDonationType || 'Not specified'}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Email Address and Phone Number */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Email Address</label>
+                    <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                      <label className="block text-enterprise-muted text-xs mb-1.5 font-semibold uppercase tracking-wider">Email Address</label>
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <EnvelopeIcon className="w-4 h-4 text-blue-600" />
+                        <div className="p-1.5 bg-enterprise-softBlue text-[#2878E5] rounded-lg">
+                          <EnvelopeIcon className="w-4 h-4" />
                         </div>
                         <a
                           href={`mailto:${donor.email}`}
-                          className="text-blue-600 hover:text-blue-700 transition-colors cursor-pointer font-semibold text-lg"
+                          className="text-[#2878E5] hover:underline font-semibold text-base"
                         >
                           {donor.email || 'N/A'}
                         </a>
                       </div>
                     </div>
-                    <div className="p-4 rounded-lg bg-gray-50">
-                      <label className="block text-gray-500 text-sm mb-2 font-medium">Phone Number</label>
+                    <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                      <label className="block text-enterprise-muted text-xs mb-1.5 font-semibold uppercase tracking-wider">Phone Number</label>
                       <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <PhoneIcon className="w-4 h-4 text-blue-600" />
+                        <div className="p-1.5 bg-enterprise-softBlue text-[#2878E5] rounded-lg">
+                          <PhoneIcon className="w-4 h-4" />
                         </div>
-                        <p className="text-gray-900 font-semibold text-lg">{donor.phone ? formatPhoneNumber(donor.phone) : 'N/A'}</p>
+                        <p className="text-enterprise-textPrimary font-semibold text-base">{donor.phone ? formatPhoneNumber(donor.phone) : 'N/A'}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Registration Date */}
-                  <div className="p-4 rounded-lg bg-gray-50">
-                    <label className="block text-gray-500 text-sm mb-2 font-medium">Registration Date</label>
+                  <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2]">
+                    <label className="block text-enterprise-muted text-xs mb-1.5 font-semibold uppercase tracking-wider">Registration Date</label>
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-100 rounded-lg">
-                        <CalendarIcon className="w-4 h-4 text-blue-600" />
+                      <div className="p-1.5 bg-enterprise-softBlue text-[#2878E5] rounded-lg">
+                        <CalendarIcon className="w-4 h-4" />
                       </div>
-                      <p className="text-gray-900 font-semibold text-lg">{formatDate(donor.createdAt)}</p>
+                      <p className="text-enterprise-textPrimary font-semibold text-base">{formatDate(donor.createdAt)}</p>
                     </div>
                   </div>
                 </div>

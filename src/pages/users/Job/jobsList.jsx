@@ -1,41 +1,36 @@
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  Typography,
-  Chip,
-  Button,
-  Input,
-  IconButton,
-  Select,
-  Option,
-} from "@material-tailwind/react";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  MagnifyingGlassIcon,
-  BriefcaseIcon,
-  EllipsisVerticalIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  BuildingStorefrontIcon,
-} from "@heroicons/react/24/outline";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL_V1, API_BASE_URL } from "@/configs/api";
+import {
+  Briefcase,
+  Plus,
+  Search,
+  Download,
+  MoreVertical,
+  Eye,
+  Pencil,
+  Trash2,
+  Calendar,
+  Building2,
+  Clock,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  CheckCircle2,
+  XCircle,
+  Tag,
+} from "lucide-react";
+import { API_BASE_URL_V1 } from "@/configs/api";
 
 export function JobsList() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expandedRows, setExpandedRows] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -43,22 +38,11 @@ export function JobsList() {
     itemsPerPage: 10,
   });
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
-  const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const menuRefs = useRef({});
-  const menuElementRef = useRef(null);
   const itemsPerPage = 10;
 
-  const toggleRow = (id) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
-  };
+  const menuRefs = useRef({});
+  const menuElementRef = useRef(null);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -79,43 +63,39 @@ export function JobsList() {
           params.append("search", searchQuery.trim());
         }
 
-        // Get token from localStorage
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = localStorage.getItem("auth_session");
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/jobs?${params.toString()}`, {
           headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `Failed to fetch jobs: ${response.status} ${response.statusText}`);
+          throw new Error(errorData.message || `Failed to fetch jobs: ${response.status}`);
         }
 
         const data = await response.json();
 
         if (data.success) {
           setJobs(data.data.jobs || []);
-          setPagination(data.data.pagination || {
-            currentPage: 1,
-            totalPages: 1,
-            totalItems: 0,
-            itemsPerPage: 10,
-          });
+          setPagination(
+            data.data.pagination || {
+              currentPage: 1,
+              totalPages: 1,
+              totalItems: (data.data.jobs || []).length,
+              itemsPerPage: 10,
+            }
+          );
         } else {
-          setError(data.message || 'Failed to fetch jobs');
+          setError(data.message || "Failed to fetch jobs");
         }
       } catch (err) {
-        console.error('Fetch jobs error:', err);
-        setError(err.message || 'An error occurred while fetching jobs');
-        // Log the full error for debugging
-        console.error('Full error details:', {
-          message: err.message,
-          stack: err.stack,
-        });
+        console.error("Fetch jobs error:", err);
+        setError(err.message || "An error occurred while fetching jobs");
       } finally {
         setLoading(false);
       }
@@ -124,28 +104,11 @@ export function JobsList() {
     fetchJobs();
   }, [currentPage, statusFilter, searchQuery]);
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset to first page on search
-  };
-
-  const handleStatusFilter = (status) => {
-    setStatusFilter(status === statusFilter ? "" : status);
-    setCurrentPage(1); // Reset to first page on filter
-  };
-
-  // Close menu when clicking outside and handle scroll lock
+  // Outside click for menu
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openMenuId && menuElementRef.current) {
-        // Check if click is outside the menu
         if (!menuElementRef.current.contains(event.target)) {
-          // Also check if click is not on the button that opened it
           const buttonElement = menuRefs.current[openMenuId];
           if (buttonElement && !buttonElement.contains(event.target)) {
             setOpenMenuId(null);
@@ -154,856 +117,471 @@ export function JobsList() {
       }
     };
 
-    // Lock scroll when menu is open
     if (openMenuId) {
-      document.body.style.overflow = "hidden";
-      // Use setTimeout to avoid immediate closure when opening menu
-      const timeoutId = setTimeout(() => {
-        window.addEventListener("click", handleClickOutside, true);
-        window.addEventListener("contextmenu", handleClickOutside, true);
-      }, 0);
-
-      return () => {
-        clearTimeout(timeoutId);
-        window.removeEventListener("click", handleClickOutside, true);
-        window.removeEventListener("contextmenu", handleClickOutside, true);
-        document.body.style.overflow = "auto";
-      };
-    } else {
-      document.body.style.overflow = "auto";
+      window.addEventListener("click", handleClickOutside, true);
+      return () => window.removeEventListener("click", handleClickOutside, true);
     }
   }, [openMenuId]);
 
-  const handleStatusChange = async (jobId, newStatus) => {
-    const job = jobs.find(j => j._id === jobId);
-    if (!job || newStatus === job.status) return;
-
-    try {
-      setUpdatingStatusId(jobId);
-
-      // Get token from localStorage
-      const sessionData = localStorage.getItem('auth_session');
-      const token = sessionData ? JSON.parse(sessionData).token : null;
-
-      const response = await fetch(`${API_BASE_URL_V1}/jobs/${jobId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update the job in the local state
-        setJobs(prevJobs =>
-          prevJobs.map(j =>
-            j._id === jobId ? { ...j, status: newStatus } : j
-          )
-        );
-      } else {
-        alert(data.message || 'Failed to update status');
-      }
-    } catch (err) {
-      console.error('Update status error:', err);
-      alert(err.message || 'An error occurred while updating status');
-    } finally {
-      setUpdatingStatusId(null);
-    }
-  };
-
   const handleDelete = async (jobId) => {
-    if (!window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+    if (!window.confirm("Are you sure you want to delete this job opportunity?")) {
       return;
     }
 
     try {
-      setDeletingId(jobId);
       setOpenMenuId(null);
-
-      // Get token from localStorage
-      const sessionData = localStorage.getItem('auth_session');
+      const sessionData = localStorage.getItem("auth_session");
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/jobs/${jobId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Refresh jobs list
-        // Get token from localStorage (reuse from above or get fresh)
-        const sessionData = localStorage.getItem('auth_session');
-        const token = sessionData ? JSON.parse(sessionData).token : null;
-
-        const jobsResponse = await fetch(`${API_BASE_URL_V1}/jobs?page=${currentPage}&limit=${itemsPerPage}${statusFilter ? `&status=${statusFilter}` : ''}${searchQuery.trim() ? `&search=${searchQuery.trim()}` : ''}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-        });
-        const jobsData = await jobsResponse.json();
-        if (jobsData.success) {
-          setJobs(jobsData.data.jobs || []);
-          setPagination(jobsData.data.pagination || pagination);
-        }
-      } else {
-        alert(data.message || 'Failed to delete job');
-      }
+      if (!response.ok) throw new Error("Failed to delete job");
+      // Refresh
+      setCurrentPage(1);
     } catch (err) {
-      console.error('Delete job error:', err);
-      alert(err.message || 'An error occurred while deleting the job');
-    } finally {
-      setDeletingId(null);
+      console.error("Delete job error:", err);
+      alert("Failed to delete job.");
     }
   };
 
-  // Calculate paginated jobs
-  const paginatedJobs = useMemo(() => {
-    return jobs;
-  }, [jobs]);
+  const handleExport = () => {
+    const csvContent = [
+      ["Job Title", "Merchant Name", "Category", "Status", "Created At"],
+      ...jobs.map((j) => [
+        `"${j.title || ""}"`,
+        `"${j.merchantId?.businessName || j.merchantName || ""}"`,
+        `"${j.category || ""}"`,
+        `"${j.status || "active"}"`,
+        `"${j.createdAt ? new Date(j.createdAt).toLocaleDateString() : ""}"`,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `jobs_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'green';
-      case 'closed':
-        return 'red';
-      case 'pending':
-        return 'amber';
-      default:
-        return 'gray';
-    }
-  };
-
-  if (loading && jobs.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <svg
-              className="animate-spin h-8 w-8 text-blue-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-          <Typography color="blue-gray">Loading jobs...</Typography>
-        </div>
-      </div>
-    );
-  }
+  // Summary counts
+  const stats = useMemo(() => {
+    const total = pagination.totalItems || jobs.length;
+    const active = jobs.filter((j) => (j.status || "active").toLowerCase() === "active").length;
+    const pending = jobs.filter((j) => (j.status || "").toLowerCase() === "pending").length;
+    return { total, active, pending };
+  }, [jobs, pagination]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto" style={{ borderColor: "transparent", }}>
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BriefcaseIcon className="w-6 h-6 text-blue-600" />
-            </div>
-            <Typography variant="h4" className="text-gray-900 font-bold">
-              Job List
-            </Typography>
+    <div className="space-y-6">
+      {/* 1. Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-enterprise-softBlue border border-[#2878E5]/20 flex items-center justify-center text-[#2878E5] flex-shrink-0">
+            <Briefcase className="w-5 h-5" />
           </div>
-          <Typography variant="small" className="text-gray-600">
-            View and manage all job opportunities posted by merchants
-          </Typography>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-enterprise-textPrimary tracking-tight">
+              Job Opportunities
+            </h1>
+            <p className="text-xs sm:text-sm text-enterprise-textSecondary mt-0.5">
+              View and manage all job openings posted by registered merchants
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-[#E7ECF2] p-4.5 shadow-card hover:shadow-elevated transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-enterprise-muted uppercase tracking-wider">
+              Total Job Listings
+            </span>
+            <div className="p-2 rounded-lg bg-enterprise-softBlue text-[#2878E5] border border-[#2878E5]/20 flex-shrink-0">
+              <Briefcase className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold text-enterprise-textPrimary tracking-tight">
+              {stats.total}
+            </span>
+            <span className="text-xs text-enterprise-muted">opportunities</span>
+          </div>
         </div>
 
-        {/* Search and Filter Section */}
-        <Card className="mb-6">
-          <CardBody className="p-4">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              {/* Search */}
-              <div className="w-full md:flex-1 md:max-w-md">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    type="text"
-                    placeholder="Search jobs by title, description, or category..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    className="pl-10"
-                    labelProps={{
-                      className: "hidden",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Status Filter */}
-              {/* <div className="flex items-center gap-2 flex-wrap">
-                <Typography variant="small" className="text-gray-700 font-medium">
-                  Filter:
-                </Typography>
-                <Button
-                  size="sm"
-                  variant={statusFilter === "" ? "filled" : "outlined"}
-                  color="blue"
-                  className="normal-case"
-                  onClick={() => handleStatusFilter("")}
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={statusFilter === "active" ? "filled" : "outlined"}
-                  color="green"
-                  className="normal-case"
-                  onClick={() => handleStatusFilter("active")}
-                >
-                  Active
-                </Button>
-                <Button
-                  size="sm"
-                  variant={statusFilter === "pending" ? "filled" : "outlined"}
-                  color="amber"
-                  className="normal-case"
-                  onClick={() => handleStatusFilter("pending")}
-                >
-                  Pending
-                </Button>
-                <Button
-                  size="sm"
-                  variant={statusFilter === "closed" ? "filled" : "outlined"}
-                  color="red"
-                  className="normal-case"
-                  onClick={() => handleStatusFilter("closed")}
-                >
-                  Closed
-                </Button>
-              </div> */}
+        <div className="bg-white rounded-xl border border-[#E7ECF2] p-4.5 shadow-card hover:shadow-elevated transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-enterprise-muted uppercase tracking-wider">
+              Active Listings
+            </span>
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex-shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
-          </CardBody>
-        </Card>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold text-enterprise-textPrimary tracking-tight">
+              {stats.active}
+            </span>
+            <span className="text-xs text-emerald-600 font-medium">available</span>
+          </div>
+        </div>
 
-        {/* Error Message */}
+        <div className="bg-white rounded-xl border border-[#E7ECF2] p-4.5 shadow-card hover:shadow-elevated transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-enterprise-muted uppercase tracking-wider">
+              Pending Review
+            </span>
+            <div className="p-2 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/60 flex-shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold text-enterprise-textPrimary tracking-tight">
+              {stats.pending}
+            </span>
+            <span className="text-xs text-amber-600 font-medium">in queue</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Search and Toolbar */}
+      <div className="bg-white rounded-xl border border-[#E7ECF2] p-3 sm:p-4 shadow-card flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-enterprise-muted pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search jobs by title, description, or category..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full pl-9.5 pr-4 py-2 text-xs sm:text-sm bg-[#F7F9FC] border border-[#E7ECF2] rounded-lg text-enterprise-textPrimary placeholder:text-enterprise-muted focus:bg-white focus:outline-none focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 transition-all duration-150"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2.5 justify-end">
+          <div className="flex items-center gap-1.5 bg-[#F7F9FC] border border-[#E7ECF2] rounded-lg px-2.5 py-1.5 text-xs text-enterprise-textSecondary">
+            <Filter className="w-3.5 h-3.5 text-enterprise-muted" />
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent text-xs font-medium text-enterprise-textPrimary focus:outline-none cursor-pointer"
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+
+          <div className="hidden sm:inline-flex px-2.5 py-1.5 text-xs font-medium text-enterprise-textSecondary bg-slate-50 border border-[#E7ECF2] rounded-lg">
+            Total: <span className="font-bold text-enterprise-textPrimary ml-1">{pagination.totalItems}</span>
+          </div>
+
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-enterprise-textPrimary bg-white border border-[#E7ECF2] hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-subtle transition-all duration-150"
+          >
+            <Download className="w-3.5 h-3.5 text-enterprise-textSecondary" />
+            <span>Export</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 4. Jobs Table */}
+      <div className="bg-white rounded-xl border border-[#E7ECF2] shadow-card overflow-hidden">
         {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardBody className="p-4">
-              <Typography color="red">{error}</Typography>
-            </CardBody>
-          </Card>
+          <div className="p-4 bg-rose-50 border-b border-rose-200 text-rose-700 text-xs sm:text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
         )}
 
-        {/* Jobs Table */}
-        <Card className="border border-blue-gray-200 shadow-sm">
-          <CardBody className="px-0 pt-0 pb-2">
-            {loading && jobs.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="flex items-center justify-center mb-4">
-                  <svg
-                    className="animate-spin h-8 w-8 text-blue-600"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                </div>
-                <Typography color="blue-gray">Loading jobs...</Typography>
-              </div>
-            ) : jobs.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <BriefcaseIcon className="w-8 h-8 text-gray-400" />
-                </div>
-                <Typography color="blue-gray" className="text-lg mb-2">
-                  No jobs found
-                </Typography>
-                <Typography variant="small" color="blue-gray">
-                  {searchQuery || statusFilter
-                    ? "Try adjusting your search or filter criteria"
-                    : "No jobs have been posted yet"}
-                </Typography>
-              </div>
-            ) : (
-              <>
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <div className="relative">
-                    <table className="w-full min-w-[800px] table-auto">
-                      <thead>
-                        <tr>
-                          {["Job Title", "Merchant Name", "Created At", "Actions"].map((el) => (
-                            <th
-                              key={el}
-                              className="border-b border-blue-gray-400 py-3 px-5 text-left"
-                            >
-                              <Typography
-                                variant="small"
-                                className="text-[13px] font-bold uppercase text-blue-gray-400"
-                              >
-                                {el}
-                              </Typography>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedJobs.map((job, key) => {
-                          const className = `py-3 px-5 ${key === paginatedJobs.length - 1
-                            ? ""
-                            : "border-b border-blue-gray-200"
-                            }`;
-
-                          const isMenuOpen = openMenuId === job._id;
-                          return (
-                            <tr
-                              key={`${job._id}-${key}`}
-                              onClick={() => navigate(`/dashboard/jobs/${job._id}`)}
-                              className={isMenuOpen ? "bg-blue-50 transition-colors duration-200" : ""}
-                            >
-                              <td className={className}>
-                                <Typography
-                                  variant="small"
-                                  color="blue-gray"
-                                  className="text-sm font-semibold"
-                                >
-                                  {job.title}
-                                </Typography>
-                              </td>
-                              <td className={className}>
-                                <Typography className="text-sm font-normal text-blue-gray-500">
-                                  {job.merchantId?.businessName || "N/A"}
-                                </Typography>
-                              </td>
-                              <td className={className}>
-                                <Typography className="text-sm font-normal text-blue-gray-500">
-                                  {formatDate(job.createdAt)}
-                                </Typography>
-                              </td>
-                              {/* <td className={className}>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-[120px]">
-                                    <Select
-                                      value={job.status}
-                                      onChange={(value) => handleStatusChange(job._id, value)}
-                                      disabled={updatingStatusId === job._id}
-                                      labelProps={{
-                                        className: "hidden",
-                                      }}
-                                      containerProps={{
-                                        className: "!min-w-[120px]",
-                                      }}
-                                      menuProps={{
-                                        className: "!min-w-[120px]",
-                                      }}
-                                    >
-                                      <Option value="pending">Pending</Option>
-                                      <Option value="active">Active</Option>
-                                      <Option value="closed">Closed</Option>
-                                    </Select>
-                                  </div>
-                                  {updatingStatusId === job._id && (
-                                    <div className="flex items-center">
-                                      <svg
-                                        className="animate-spin h-4 w-4 text-blue-600"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <circle
-                                          className="opacity-25"
-                                          cx="12"
-                                          cy="12"
-                                          r="10"
-                                          stroke="currentColor"
-                                          strokeWidth="4"
-                                        ></circle>
-                                        <path
-                                          className="opacity-75"
-                                          fill="currentColor"
-                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                        ></path>
-                                      </svg>
-                                    </div>
-                                  )}
-                                </div>
-                              </td> */}
-                              <td className={className}>
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="relative inline-block"
-                                    ref={(el) => {
-                                      if (el) menuRefs.current[job._id] = el;
-                                    }}
-                                  >
-                                    <IconButton
-                                      size="sm"
-                                      variant="text"
-                                      color={isMenuOpen ? "blue" : "gray"}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        if (openMenuId === job._id) {
-                                          setOpenMenuId(null);
-                                        } else {
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          const menuWidth = 192; // w-48 = 192px
-                                          const menuHeight = 180; // Approximate menu height
-                                          const viewportHeight = window.innerHeight;
-                                          const viewportWidth = window.innerWidth;
-
-                                          // Calculate available space below and above
-                                          const spaceBelow = viewportHeight - rect.bottom;
-                                          const spaceAbove = rect.top;
-
-                                          // Determine vertical position (above or below) using clientY
-                                          const showAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-                                          const topPosition = showAbove
-                                            ? rect.top - menuHeight - 8
-                                            : rect.bottom + 8;
-
-                                          // Determine horizontal position (right-aligned to button, but adjust if needed)
-                                          // Use clientX for fixed positioning
-                                          let leftPosition = rect.right - menuWidth;
-
-                                          // If menu would go off the left edge, align to left edge of button
-                                          if (leftPosition < 0) {
-                                            leftPosition = rect.left;
-                                          }
-
-                                          // If menu would go off the right edge, adjust
-                                          if (leftPosition + menuWidth > viewportWidth) {
-                                            leftPosition = viewportWidth - menuWidth - 8;
-                                          }
-
-                                          // Ensure menu doesn't go off screen
-                                          if (leftPosition < 8) {
-                                            leftPosition = 8;
-                                          }
-
-                                          setMenuPosition({
-                                            top: topPosition,
-                                            left: leftPosition,
-                                            buttonRight: rect.right,
-                                            buttonTop: rect.top,
-                                            buttonBottom: rect.bottom,
-                                            showAbove: showAbove
-                                          });
-                                          setOpenMenuId(job._id);
-                                        }
-                                      }}
-                                      className={`rounded-lg transition-colors ${isMenuOpen ? "bg-blue-100" : ""}`}
-                                    >
-                                      <EllipsisVerticalIcon className={`h-5 w-5 ${isMenuOpen ? "text-blue-600" : ""}`} />
-                                    </IconButton>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-3 p-4">
-                  {/* Header Row - Only shown once at top */}
-                  <div className="bg-blue-gray-50 rounded-t-lg border border-b-0 border-blue-gray-100 px-4 py-2">
-                    <div className="flex items-center justify-between">
-                      <Typography
-                        variant="small"
-                        className="text-xs font-bold uppercase text-blue-gray-600"
-                      >
-                        Job Title
-                      </Typography>
-                      <div className="flex items-center gap-8">
-                        <Typography
-                          variant="small"
-                          className="text-xs font-bold uppercase text-blue-gray-600"
-                        >
-                          Status
-                        </Typography>
-                        <div className="w-6"></div> {/* Spacer for expand icon */}
-                      </div>
-                    </div>
-                  </div>
-
-                  {paginatedJobs.map((job, key) => {
-                    const isExpanded = expandedRows.has(`${job._id}-${key}`);
+        {loading ? (
+          <div className="p-8 space-y-4">
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-3 border-[#2878E5] border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-center text-xs font-medium text-enterprise-muted">
+              Loading job listings...
+            </p>
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 rounded-xl bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center mx-auto mb-3 border border-[#2878E5]/20">
+              <Briefcase className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-enterprise-textPrimary">No jobs found</h3>
+            <p className="text-xs text-enterprise-textSecondary max-w-sm mx-auto mt-1">
+              {searchQuery
+                ? `No jobs match "${searchQuery}". Try adjusting your keywords.`
+                : "No job opportunities have been posted yet."}
+            </p>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="mt-4 text-xs font-semibold text-[#2878E5] hover:underline"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Job Title
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Merchant Name
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Category
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Status
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                      Created At
+                    </th>
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E7ECF2]">
+                  {jobs.map((job) => {
+                    const id = job.id || job._id;
+                    const merchantName =
+                      job.merchantId?.businessName || job.merchantName || "Unknown Merchant";
+                    const isMenuOpen = openMenuId === id;
+                    const statusStr = (job.status || "active").toLowerCase();
 
                     return (
-                      <div
-                        key={`${job._id}-${key}`}
-                        className="bg-white rounded-lg border border-blue-gray-100 shadow-sm overflow-hidden"
+                      <tr
+                        key={id}
+                        onClick={() => navigate(`/dashboard/jobs/${id}`)}
+                        className={`group cursor-pointer transition-colors duration-150 ${
+                          isMenuOpen ? "bg-enterprise-softBlue/30" : "hover:bg-slate-50/80"
+                        }`}
                       >
-                        {/* Main Row - Title and Status in One Row - Entire Row Clickable */}
-                        <div
-                          className="flex items-center gap-2 p-4 border-b border-blue-gray-200 cursor-pointer hover:bg-blue-gray-50/50 transition-colors"
-                          onClick={() => toggleRow(`${job._id}-${key}`)}
-                        >
-                          {/* Job Title */}
-                          <div className="flex-1 min-w-0">
-                            <Typography
-                              variant="small"
-                              color="blue-gray"
-                              className="text-sm font-semibold break-words"
+                        {/* 1. Job Title */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-xs border border-[#2878E5]/20 flex-shrink-0 group-hover:scale-102 transition-transform">
+                              <Briefcase className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 max-w-[240px]">
+                              <p className="text-xs sm:text-sm font-semibold text-enterprise-textPrimary group-hover:text-[#2878E5] transition-colors truncate">
+                                {job.title}
+                              </p>
+                              {job.description && (
+                                <p className="text-[11px] text-enterprise-muted truncate">
+                                  {job.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 2. Merchant Name */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-enterprise-textSecondary">
+                            <Building2 className="w-3.5 h-3.5 text-enterprise-muted flex-shrink-0" />
+                            <span className="truncate max-w-[180px]">{merchantName}</span>
+                          </div>
+                        </td>
+
+                        {/* 3. Category */}
+                        <td className="py-3.5 px-5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-enterprise-textPrimary border border-slate-200">
+                            {job.category || "General"}
+                          </span>
+                        </td>
+
+                        {/* 4. Status */}
+                        <td className="py-3.5 px-5">
+                          {statusStr === "active" ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              Active
+                            </span>
+                          ) : statusStr === "closed" ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                              Closed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                              Pending
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 5. Date */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-1.5 text-xs text-enterprise-muted">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>
+                              {job.createdAt
+                                ? new Date(job.createdAt).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })
+                                : "N/A"}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* 6. Context Menu */}
+                        <td className="py-3.5 px-5 text-right">
+                          <div
+                            className="flex items-center justify-end gap-1.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div
+                              className="relative"
+                              ref={(el) => {
+                                if (el) menuRefs.current[id] = el;
+                              }}
                             >
-                              {job.title}
-                            </Typography>
-                          </div>
-                          {/* Status Dropdown */}
-                          <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                            <div className="w-[100px]">
-                              <Select
-                                value={job.status}
-                                onChange={(value) => handleStatusChange(job._id, value)}
-                                disabled={updatingStatusId === job._id}
-                                labelProps={{
-                                  className: "hidden",
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (openMenuId === id) {
+                                    setOpenMenuId(null);
+                                  } else {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const menuWidth = 150;
+                                    const menuHeight = 110;
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    const showAbove =
+                                      spaceBelow < menuHeight && rect.top > spaceBelow;
+
+                                    setMenuPosition({
+                                      top: showAbove ? rect.top - menuHeight - 6 : rect.bottom + 6,
+                                      left: Math.max(8, rect.right - menuWidth),
+                                    });
+                                    setOpenMenuId(id);
+                                  }
                                 }}
-                                containerProps={{
-                                  className: "!min-w-[100px]",
-                                }}
-                                menuProps={{
-                                  className: "!min-w-[100px]",
-                                }}
+                                className="p-1 rounded-md text-enterprise-muted hover:text-enterprise-textPrimary hover:bg-slate-100 transition-colors"
                               >
-                                <Option value="pending">Pending</Option>
-                                <Option value="active">Active</Option>
-                                <Option value="closed">Closed</Option>
-                              </Select>
-                            </div>
-                            {updatingStatusId === job._id && (
-                              <div className="flex items-center justify-center mt-1">
-                                <svg
-                                  className="animate-spin h-3 w-3 text-blue-600"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                          {/* Expand/Collapse Icon */}
-                          <div className="flex-shrink-0 ml-1 pointer-events-none">
-                            {isExpanded ? (
-                              <ChevronUpIcon className="h-5 w-5 text-blue-gray-600" />
-                            ) : (
-                              <ChevronDownIcon className="h-5 w-5 text-blue-gray-600" />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Expanded Details - Hidden by Default */}
-                        {isExpanded && (
-                          <div className="bg-blue-gray-50/30">
-                            {/* Merchant Name Field */}
-                            <div className="px-4 py-3 border-b border-blue-gray-200">
-                              <div className="flex items-center justify-between">
-                                <Typography
-                                  variant="small"
-                                  className="text-xs font-normal text-blue-gray-500"
-                                >
-                                  Merchant Name
-                                </Typography>
-                                <Typography className="text-sm font-normal text-blue-gray-900">
-                                  {job.merchantId?.businessName || "N/A"}
-                                </Typography>
-                              </div>
-                            </div>
-
-                            {/* Created At Field */}
-                            <div className="px-4 py-3 border-b border-blue-gray-200">
-                              <div className="flex items-center justify-between">
-                                <Typography
-                                  variant="small"
-                                  className="text-xs font-normal text-blue-gray-500"
-                                >
-                                  Created At
-                                </Typography>
-                                <Typography className="text-sm font-normal text-blue-gray-900">
-                                  {formatDate(job.createdAt)}
-                                </Typography>
-                              </div>
-                            </div>
-
-                            {/* Actions Buttons */}
-                            <div className="px-4 py-4 border-t border-blue-gray-200">
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outlined"
-                                    className="flex items-center justify-center gap-1.5 px-3 py-2 border border-blue-300 bg-white hover:bg-blue-50 normal-case text-blue-700 rounded-lg flex-1"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/dashboard/jobs/${job._id}`);
-                                    }}
-                                  >
-                                    <EyeIcon className="h-4 w-4 text-blue-600" />
-                                    <span className="text-sm font-medium">View Details</span>
-                                  </Button>
-
-                                  <IconButton
-                                    size="sm"
-                                    variant="outlined"
-                                    className="border border-red-300 bg-white hover:bg-red-50 rounded-lg w-10 h-10 flex-shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDelete(job._id);
-                                    }}
-                                    disabled={deletingId === job._id}
-                                  >
-                                    <TrashIcon className="h-4 w-4 text-red-600" />
-                                  </IconButton>
-                                </div>
-
-                                <Button
-                                  size="sm"
-                                  variant="outlined"
-                                  className="flex items-center justify-center gap-1.5 px-3 py-2 border border-gray-300 bg-white hover:bg-gray-50 normal-case text-gray-700 rounded-lg w-full"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/dashboard/merchants/${job.merchantId?._id || job.merchantId}`);
-                                  }}
-                                >
-                                  <BuildingStorefrontIcon className="h-4 w-4 text-gray-600" />
-                                  <span className="text-sm font-medium">View Merchant</span>
-                                </Button>
-                              </div>
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                        )}
-                      </div>
+                        </td>
+                      </tr>
                     );
                   })}
-                </div>
+                </tbody>
+              </table>
+            </div>
 
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4">
-                    <Typography variant="small" color="blue-gray" className="font-normal text-center sm:text-left">
-                      Showing {(pagination.currentPage - 1) * pagination.itemsPerPage + 1} to{" "}
-                      {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of{" "}
-                      {pagination.totalItems} entries
-                    </Typography>
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {/* First Button */}
-                      <Button
-                        variant="text"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={pagination.currentPage === 1}
-                        className={`min-w-[50px] text-xs normal-case ${pagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                          }`}
-                      >
-                        First
-                      </Button>
+            {/* Pagination Toolbar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 bg-[#F7F9FC] border-t border-[#E7ECF2]">
+              <div className="flex items-center gap-3 text-xs text-enterprise-textSecondary">
+                <span>
+                  Showing{" "}
+                  <span className="font-semibold text-enterprise-textPrimary">
+                    {Math.min((currentPage - 1) * itemsPerPage + 1, pagination.totalItems)}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-enterprise-textPrimary">
+                    {Math.min(currentPage * itemsPerPage, pagination.totalItems)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-enterprise-textPrimary">
+                    {pagination.totalItems}
+                  </span>{" "}
+                  jobs
+                </span>
+              </div>
 
-                      {/* Previous Button */}
-                      <IconButton
-                        variant="text"
-                        size="sm"
-                        onClick={() => handlePageChange(pagination.currentPage - 1)}
-                        disabled={pagination.currentPage === 1}
-                        className={pagination.currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-                      >
-                        <ChevronLeftIcon className="h-4 w-4" />
-                      </IconButton>
-
-                      {/* Page Numbers */}
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => {
-                          // Show first page, last page, current page, and pages around current
-                          if (
-                            page === 1 ||
-                            page === pagination.totalPages ||
-                            (page >= pagination.currentPage - 1 && page <= pagination.currentPage + 1)
-                          ) {
-                            return (
-                              <Button
-                                key={page}
-                                variant={pagination.currentPage === page ? "filled" : "text"}
-                                size="sm"
-                                onClick={() => handlePageChange(page)}
-                                className={`min-w-[32px] ${pagination.currentPage === page
-                                  ? "bg-blue-gray-900 text-white"
-                                  : "text-blue-gray-600"
-                                  }`}
-                              >
-                                {page}
-                              </Button>
-                            );
-                          } else if (page === pagination.currentPage - 2 || page === pagination.currentPage + 2) {
-                            return (
-                              <Typography key={page} variant="small" className="px-2 text-blue-gray-400">
-                                ...
-                              </Typography>
-                            );
-                          }
-                          return null;
-                        })}
-                      </div>
-
-                      {/* Last Button */}
-                      <Button
-                        variant="text"
-                        size="sm"
-                        onClick={() => handlePageChange(pagination.totalPages)}
-                        disabled={pagination.currentPage === pagination.totalPages}
-                        className={`min-w-[60px] text-xs normal-case ${pagination.currentPage === pagination.totalPages ? "opacity-50 cursor-not-allowed" : ""
-                          }`}
-                      >
-                        Last
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Context Menu Overlay */}
-        {openMenuId && (
-          <>
-            {/* Backdrop - transparent overlay to catch clicks */}
-            <div
-              className="fixed inset-0 z-[9998] bg-transparent"
-              onClick={() => setOpenMenuId(null)}
-            />
-            {/* Menu */}
-            <div
-              ref={menuElementRef}
-              className="fixed z-[9999] w-48 bg-white rounded-lg shadow-xl border-2 border-blue-200 py-1"
-              style={{
-                top: `${menuPosition.top}px`,
-                left: `${menuPosition.left}px`
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Job title header */}
-              {(() => {
-                const job = jobs.find(j => j._id === openMenuId);
-                return job ? (
-                  <div className="px-4 py-2 border-b border-gray-200 bg-blue-50">
-                    <Typography variant="small" className="text-xs font-semibold text-blue-gray-700 truncate">
-                      {job.title}
-                    </Typography>
-                  </div>
-                ) : null;
-              })()}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const currentMenuId = openMenuId;
-                  setOpenMenuId(null);
-                  navigate(`/dashboard/jobs/${currentMenuId}`);
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors cursor-pointer"
-              >
-                <EyeIcon className="h-4 w-4" />
-                View Details
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const currentMenuId = openMenuId;
-                  setOpenMenuId(null);
-                  const job = jobs.find(j => j._id === currentMenuId);
-                  if (job && job.merchantId) {
-                    navigate(`/dashboard/merchants/${job.merchantId._id || job.merchantId}`);
-                  }
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors cursor-pointer"
-              >
-                <BuildingStorefrontIcon className="h-4 w-4" />
-                View Merchant
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const currentMenuId = openMenuId;
-                  if (currentMenuId) {
-                    setOpenMenuId(null);
-                    handleDelete(currentMenuId);
-                  }
-                }}
-                disabled={deletingId === openMenuId}
-                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                <TrashIcon className="h-4 w-4" />
-                {deletingId === openMenuId ? 'Deleting...' : 'Delete'}
-              </button>
+              {/* Prev / Next Page Buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-lg border border-[#E7ECF2] bg-white text-enterprise-textSecondary hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="px-3 py-1 text-xs font-semibold text-enterprise-textPrimary bg-white border border-[#E7ECF2] rounded-lg">
+                  {currentPage} / {pagination.totalPages || 1}
+                </span>
+                <button
+                  disabled={currentPage >= pagination.totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  className="p-1.5 rounded-lg border border-[#E7ECF2] bg-white text-enterprise-textSecondary hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </>
         )}
       </div>
+
+      {/* Floating Action Menu */}
+      {openMenuId && (
+        <div
+          ref={menuElementRef}
+          style={{
+            position: "fixed",
+            top: `${menuPosition.top}px`,
+            left: `${menuPosition.left}px`,
+            zIndex: 9999,
+          }}
+          className="w-40 bg-white rounded-xl shadow-floating border border-[#E7ECF2] py-1 text-xs animate-in fade-in zoom-in-95 duration-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              navigate(`/dashboard/jobs/${openMenuId}`);
+              setOpenMenuId(null);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-enterprise-textPrimary hover:bg-slate-50 transition-colors font-medium text-left"
+          >
+            <Eye className="w-3.5 h-3.5 text-enterprise-muted" />
+            View Job
+          </button>
+          <div className="border-t border-[#E7ECF2] my-1" />
+          <button
+            onClick={() => handleDelete(openMenuId)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium text-left"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete Job
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 export default JobsList;
-
