@@ -201,9 +201,17 @@ export function Home() {
         dataLabels: { enabled: false },
         stroke: { curve: "smooth", width: 2.5 },
         xaxis: {
+          type: "category",
           categories: activityTrends.map((t) => {
-            const date = new Date(t.date);
-            return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            if (!t?.date) return "";
+            // Handle ISO string, 'YYYY-MM-DD', or other standard representations
+            // Replace space with 'T' if string is 'YYYY-MM-DD HH:mm:ss'
+            const cleanStr = typeof t.date === "string" ? t.date.trim().replace(" ", "T") : t.date;
+            const parsed = new Date(cleanStr);
+            if (!isNaN(parsed.getTime())) {
+              return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            }
+            return String(t.date);
           }),
           labels: {
             style: { colors: "#98A2B3", fontSize: "11px", fontWeight: 500 },
@@ -232,6 +240,23 @@ export function Home() {
         tooltip: {
           theme: "light",
           style: { fontSize: "12px", fontFamily: '"Plus Jakarta Sans", sans-serif' },
+          x: {
+            formatter: (val, { dataPointIndex }) => {
+              const item = activityTrends[dataPointIndex];
+              if (!item?.date) return val || "Activity Log";
+              const cleanStr = typeof item.date === "string" ? item.date.trim().replace(" ", "T") : item.date;
+              const parsed = new Date(cleanStr);
+              if (!isNaN(parsed.getTime())) {
+                return parsed.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                });
+              }
+              return String(item.date);
+            },
+          },
         },
       },
     };

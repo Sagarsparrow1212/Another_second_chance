@@ -116,7 +116,35 @@ export function Analytics() {
           toolbar: { show: false },
         },
         xaxis: {
-          categories: trends.map(t => t.date),
+          type: "category",
+          categories: trends.map(t => {
+            if (!t?.date) return "";
+            const cleanStr = typeof t.date === "string" ? t.date.trim().replace(" ", "T") : t.date;
+            const parsed = new Date(cleanStr);
+            if (!isNaN(parsed.getTime())) {
+              return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            }
+            return String(t.date);
+          }),
+        },
+        tooltip: {
+          x: {
+            formatter: (val, { dataPointIndex }) => {
+              const item = trends[dataPointIndex];
+              if (!item?.date) return val || "Date";
+              const cleanStr = typeof item.date === "string" ? item.date.trim().replace(" ", "T") : item.date;
+              const parsed = new Date(cleanStr);
+              if (!isNaN(parsed.getTime())) {
+                return parsed.toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                });
+              }
+              return String(item.date);
+            },
+          },
         },
         colors: ["#3b82f6", "#10b981", "#ef4444"],
         legend: {

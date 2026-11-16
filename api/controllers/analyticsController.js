@@ -15,12 +15,16 @@ const getAnalyticsOverview = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    // Build date filter
+    // Build date filter (support both activityTime and timestamp)
     const dateFilter = {};
     if (startDate || endDate) {
-      dateFilter.timestamp = {};
-      if (startDate) dateFilter.timestamp.$gte = new Date(startDate);
-      if (endDate) dateFilter.timestamp.$lte = new Date(endDate);
+      const timeCondition = {};
+      if (startDate) timeCondition.$gte = new Date(startDate);
+      if (endDate) timeCondition.$lte = new Date(endDate);
+      dateFilter.$or = [
+        { activityTime: timeCondition },
+        { timestamp: timeCondition },
+      ];
     }
 
     // Get date range (default: last 30 days)
@@ -30,10 +34,19 @@ const getAnalyticsOverview = async (req, res) => {
     // Total activities
     const totalActivities = await ActivityLog.countDocuments(dateFilter);
 
-    // Success vs Failure
-    const successCount = await ActivityLog.countDocuments({ ...dateFilter, status: 'success' });
-    const failureCount = await ActivityLog.countDocuments({ ...dateFilter, status: 'failure' });
-    const errorCount = await ActivityLog.countDocuments({ ...dateFilter, status: 'error' });
+    // Success vs Failure (handle both lowercase and uppercase 'SUCCESS'/'FAILED')
+    const successCount = await ActivityLog.countDocuments({
+      ...dateFilter,
+      status: { $in: ['success', 'SUCCESS'] },
+    });
+    const failureCount = await ActivityLog.countDocuments({
+      ...dateFilter,
+      status: { $in: ['failure', 'FAILED'] },
+    });
+    const errorCount = await ActivityLog.countDocuments({
+      ...dateFilter,
+      status: { $in: ['error', 'ERROR'] },
+    });
 
     // User statistics
     const totalUsers = await User.countDocuments({ isDeleted: false });
@@ -140,50 +153,101 @@ const getAnalyticsOverview = async (req, res) => {
  */
 const getActivityTrends = async (req, res) => {
   try {
-    const { startDate, endDate, groupBy = 'day' } = req.query;
+    const { startDate, endDate, groupBy = 'day', days } = req.query;
     
-    const dateFilter = {};
-    if (startDate || endDate) {
-      dateFilter.timestamp = {};
-      if (startDate) dateFilter.timestamp.$gte = new Date(startDate);
-      if (endDate) dateFilter.timestamp.$lte = new Date(endDate);
+    // Resolve date range: if days param is passed or no date provided, default to last N days
+    let start, end;
+    if (startDate) {
+      start = new Date(startDate);
+    } else if (days) {
+      start = new Date(Date.now() - parseInt(days, 10) * 24 * 60 * 60 * 1000);
     }
+    if (endDate) {
+      end = new Date(endDate);
+    }
+
+    const dateFilter = {};
+    if (start || end) {
+      const timeCondition = {};
+      if (start) timeCondition.$gte = start;
+      if (end) timeCondition.$lte = end;
+      dateFilter.$or = [
+        { activityTime: timeCondition },
+        { timestamp: timeCondition },
+      ];
+    }
+
+    // Use $ifNull to prioritize activityTime, then timestamp, then createdAt
+    const effectiveDateField = { $ifNull: ['$activityTime', { $ifNull: ['$timestamp', '$createdAt'] }] };
 
     let groupFormat;
     if (groupBy === 'hour') {
       groupFormat = {
-        year: { $year: '$timestamp' },
-        month: { $month: '$timestamp' },
-        day: { $dayOfMonth: '$timestamp' },
-        hour: { $hour: '$timestamp' },
+        year: { $year: effectiveDateField },
+        month: { $month: effectiveDateField },
+        day: { $dayOfMonth: effectiveDateField },
+        hour: { $hour: effectiveDateField },
       };
     } else if (groupBy === 'week') {
       groupFormat = {
-        year: { $year: '$timestamp' },
-        week: { $week: '$timestamp' },
+        year: { $year: effectiveDateField },
+        week: { $week: effectiveDateField },
       };
     } else {
       groupFormat = {
-        year: { $year: '$timestamp' },
-        month: { $month: '$timestamp' },
-        day: { $dayOfMonth: '$timestamp' },
+        year: { $year: effectiveDateField },
+        month: { $month: effectiveDateField },
+        day: { $dayOfMonth: effectiveDateField },
       };
     }
 
     const trends = await ActivityLog.aggregate([
-      { $match: dateFilter },
+      ...(Object.keys(dateFilter).length > 0 ? [{ $match: dateFilter }] : []),
       {
         $group: {
           _id: groupFormat,
           count: { $sum: 1 },
           success: {
-            $sum: { $cond: [{ $eq: ['$status', 'success'] }, 1, 0] }
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    { $toLower: { $ifNull: ['$status', ''] } },
+                    ['success', 'completed', 'active', 'ok']
+                  ]
+                },
+                1,
+                0
+              ]
+            }
           },
           failure: {
-            $sum: { $cond: [{ $eq: ['$status', 'failure'] }, 1, 0] }
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    { $toLower: { $ifNull: ['$status', ''] } },
+                    ['failure', 'failed']
+                  ]
+                },
+                1,
+                0
+              ]
+            }
           },
           error: {
-            $sum: { $cond: [{ $eq: ['$status', 'error'] }, 1, 0] }
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    { $toLower: { $ifNull: ['$status', ''] } },
+                    ['error']
+                  ]
+                },
+                1,
+                0
+              ]
+            }
           },
           avgResponseTime: {
             $avg: {
@@ -626,12 +690,16 @@ const exportActivities = async (req, res) => {
  * Helper function to format date from aggregation group
  */
 function formatDateFromGroup(group, groupBy) {
+  if (!group || !group.year) {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
   if (groupBy === 'hour') {
-    return `${group.year}-${String(group.month).padStart(2, '0')}-${String(group.day).padStart(2, '0')} ${String(group.hour).padStart(2, '0')}:00`;
+    return `${group.year}-${String(group.month || 1).padStart(2, '0')}-${String(group.day || 1).padStart(2, '0')} ${String(group.hour || 0).padStart(2, '0')}:00`;
   } else if (groupBy === 'week') {
-    return `Week ${group.week}, ${group.year}`;
+    return `Week ${group.week || 1}, ${group.year}`;
   } else {
-    return `${group.year}-${String(group.month).padStart(2, '0')}-${String(group.day).padStart(2, '0')}`;
+    return `${group.year}-${String(group.month || 1).padStart(2, '0')}-${String(group.day || 1).padStart(2, '0')}`;
   }
 }
 
