@@ -1,21 +1,31 @@
 import { useState, useEffect } from "react";
-import {
-  ArrowLeftIcon,
-  CheckCircleIcon,
-  UserIcon,
-  PhotoIcon,
-  MapPinIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  DocumentTextIcon,
-  ChevronDownIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  BuildingOffice2Icon,
-} from "@heroicons/react/24/outline";
 import { useNavigate, useParams } from "react-router-dom";
-import { API_BASE_URL_V1, API_BASE_URL } from "@/configs/api";
-import "./registerHomeless.css";
+import {
+  ArrowLeft,
+  User,
+  Briefcase,
+  MapPin,
+  FileCheck2,
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  X,
+  Plus,
+  Building2,
+  Mail,
+  Phone,
+  Lock,
+  ArrowRight,
+  ShieldCheck,
+  Check,
+  Languages,
+  Activity,
+  FileText,
+  Sparkles,
+} from "lucide-react";
+import { API_BASE_URL_V1 } from "@/configs/api";
 
 const SKILLS_OPTIONS = [
   "General Labor",
@@ -32,46 +42,31 @@ const SKILLS_OPTIONS = [
   "Other",
 ];
 
+const LANGUAGES_OPTIONS = ["English", "Spanish", "Other"];
 
-const LANGUAGES_OPTIONS = [
-  "English",
-  "Spanish",
-  "Other",
+const STEPS = [
+  { id: 1, title: "Sponsor & Identity", desc: "Organization sponsor & account credentials", icon: Building2 },
+  { id: 2, title: "Personal & Contact", desc: "Demographics, contact info & bio", icon: User },
+  { id: 3, title: "Skills & Background", desc: "Work experience & language skills", icon: Briefcase },
+  { id: 4, title: "Location & Verification", desc: "Shelter area & ID verification", icon: FileCheck2 },
 ];
-
 
 export function RegisterHomeless() {
   const navigate = useNavigate();
   const { organizationId } = useParams();
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [profilePreview, setProfilePreview] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Organizations list
   const [organizations, setOrganizations] = useState([]);
   const [loadingOrgs, setLoadingOrgs] = useState(false);
-  const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [isOrganizationLocked, setIsOrganizationLocked] = useState(false);
-  const [selectKey, setSelectKey] = useState(0); // Force re-render of Select component
 
-  // Collapsible sections state
-  const [openSections, setOpenSections] = useState({
-    profile: true,
-    personal: true,
-    skills: true,
-    location: true,
-    documents: true,
-    terms: true,
-  });
-
-  const toggleSection = (section) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
-  // Form state
+  // Form State
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -85,7 +80,7 @@ export function RegisterHomeless() {
     contactPhone: "",
     contactEmail: "",
     bio: "",
-    languages: [],
+    languages: ["English"],
     healthConditions: "",
     verificationDocument: null,
     organizationCutPercentage: "",
@@ -93,315 +88,251 @@ export function RegisterHomeless() {
     organizationId: "",
   });
 
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
-
-  // Password visibility state
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Validation errors
   const [errors, setErrors] = useState({});
 
-  // Fetch organizations for dropdown
+  // Fetch organizations
   useEffect(() => {
     const fetchOrganizations = async () => {
       setLoadingOrgs(true);
       try {
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = localStorage.getItem("auth_session");
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/organizations?limit=1000`, {
           headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch organizations');
-        }
-
-        const data = await response.json();
-        if (data.success) {
-          setOrganizations(data.data.organizations);
-
-          // If organizationId is provided in params, find and set it
-          if (organizationId) {
-            // Convert to string for comparison
-            const orgIdStr = String(organizationId);
-            console.log('Looking for organization with ID:', orgIdStr);
-            console.log('Available organizations:', data.data.organizations.map(o => ({ id: o.id, name: o.name })));
-
-            const org = data.data.organizations.find(o => {
-              const orgId = String(o.id);
-              return orgId === orgIdStr;
-            });
-
-            if (org) {
-              console.log('Found organization:', org);
-              setSelectedOrganization(org);
-              setIsOrganizationLocked(true);
-              // Set the organizationId in formData after organizations are loaded
-              setFormData(prev => {
-                console.log('Setting organizationId in formData:', orgIdStr);
-                return { ...prev, organizationId: orgIdStr };
-              });
-              // Force Select component to remount
-              setSelectKey(prev => prev + 1);
-            } else {
-              console.warn(`Organization with ID ${organizationId} not found`);
-              setError(`Organization not found. Please select an organization manually.`);
-            }
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setOrganizations(data.data.organizations || []);
           }
         }
       } catch (err) {
-        console.error('Fetch organizations error:', err);
-        setError('Failed to load organizations. Please refresh the page.');
+        console.error("Fetch organizations error:", err);
       } finally {
         setLoadingOrgs(false);
       }
     };
 
     fetchOrganizations();
-  }, [organizationId]);
+  }, []);
 
-  // Force update when organization is found and set
+  // Set locked organization if navigated with param
   useEffect(() => {
-    if (organizationId && organizations.length > 0 && !formData.organizationId) {
+    if (organizationId && organizations.length > 0) {
       const orgIdStr = String(organizationId);
-      const org = organizations.find(o => String(o.id) === orgIdStr);
-      if (org) {
-        console.log('Force setting organization in useEffect:', orgIdStr);
-        setSelectedOrganization(org);
+      const found = organizations.find((o) => String(o.id) === orgIdStr);
+      if (found) {
         setIsOrganizationLocked(true);
-        setFormData(prev => {
-          if (prev.organizationId !== orgIdStr) {
-            return { ...prev, organizationId: orgIdStr };
-          }
-          return prev;
-        });
-        // Force Select component to remount
-        setSelectKey(prev => prev + 1);
+        setFormData((prev) => ({ ...prev, organizationId: orgIdStr }));
       }
     }
-  }, [organizationId, organizations, formData.organizationId]);
+  }, [organizationId, organizations]);
 
-  // Phone number formatting function
   const formatPhoneNumber = (value) => {
-    // Remove all non-digit characters
-    const phoneNumber = value.replace(/\D/g, '');
-
-    // Limit to 10 digits (US phone number format)
+    const phoneNumber = value.replace(/\D/g, "");
     const limitedNumber = phoneNumber.slice(0, 10);
-
-    // Format: (555) 123-4567
-    if (limitedNumber.length === 0) {
-      return '';
-    } else if (limitedNumber.length <= 3) {
-      return `(${limitedNumber}`;
-    } else if (limitedNumber.length <= 6) {
-      return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
-    } else {
-      return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
-    }
+    if (limitedNumber.length === 0) return "";
+    if (limitedNumber.length <= 3) return `(${limitedNumber}`;
+    if (limitedNumber.length <= 6) return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3)}`;
+    return `(${limitedNumber.slice(0, 3)}) ${limitedNumber.slice(3, 6)}-${limitedNumber.slice(6, 10)}`;
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Auto-format phone number fields
     let formattedValue = value;
-    if (name === 'contactPhone') {
-      formattedValue = formatPhoneNumber(value);
-    }
+    if (name === "contactPhone") formattedValue = formatPhoneNumber(value);
 
-    // Validate organizationCutPercentage - only allow numbers and decimal point
-    if (name === 'organizationCutPercentage') {
-      // Allow empty string
-      if (value === '') {
-        formattedValue = '';
-      } else {
-        // Only allow numbers and one decimal point
-        const regex = /^\d*\.?\d*$/;
-        if (regex.test(value)) {
-          formattedValue = value;
-        } else {
-          // If invalid, don't update the value
-          return;
-        }
-      }
+    if (name === "organizationCutPercentage") {
+      if (value !== "" && !/^\d*\.?\d*$/.test(value)) return;
+      formattedValue = value;
     }
 
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : formattedValue,
     }));
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleMultiSelect = (name, value) => {
+  const handleToggleArrayItem = (field, item) => {
     setFormData((prev) => {
-      const currentValues = prev[name] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter((item) => item !== value)
-        : [...currentValues, value];
-      return {
-        ...prev,
-        [name]: newValues,
-      };
+      const current = prev[field] || [];
+      const updated = current.includes(item)
+        ? current.filter((i) => i !== item)
+        : [...current, item];
+      return { ...prev, [field]: updated };
     });
   };
 
   const handleProfilePictureChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePicture(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Profile picture exceeds 5MB limit");
+      return;
     }
-  };
-
-  const handleDocumentChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        verificationDocument: file,
-      }));
-
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setDocumentPreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setDocumentPreview(file.name);
-      }
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setError("Please select a valid image (JPG, PNG, GIF, WEBP)");
+      return;
     }
+    setProfilePicture(file);
+    setProfilePreview(URL.createObjectURL(file));
+    setError("");
   };
 
   const removeProfilePicture = () => {
+    if (profilePreview) URL.revokeObjectURL(profilePreview);
     setProfilePicture(null);
     setProfilePreview(null);
   };
 
+  const handleDocumentChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Document file exceeds 5MB limit");
+      return;
+    }
+    setFormData((prev) => ({ ...prev, verificationDocument: file }));
+    if (file.type.startsWith("image/")) {
+      setDocumentPreview(URL.createObjectURL(file));
+    } else {
+      setDocumentPreview(null);
+    }
+    setError("");
+  };
+
   const removeDocument = () => {
-    setFormData((prev) => ({
-      ...prev,
-      verificationDocument: null,
-    }));
+    if (documentPreview) URL.revokeObjectURL(documentPreview);
+    setFormData((prev) => ({ ...prev, verificationDocument: null }));
     setDocumentPreview(null);
   };
 
+  const validateStep = (stepNumber) => {
+    const stepErrors = {};
 
+    if (stepNumber === 1) {
+      if (!formData.organizationId) {
+        stepErrors.organizationId = "Please select an endorsing organization";
+      }
 
-  const validateForm = () => {
-    const newErrors = {};
+      if (!formData.username.trim()) {
+        stepErrors.username = "Username is required";
+      } else if (formData.username.length < 3) {
+        stepErrors.username = "Username must be at least 3 characters";
+      } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+        stepErrors.username = "Username can only contain letters, numbers, and underscores";
+      }
 
-    if (!formData.organizationId) {
-      newErrors.organizationId = "Organization is required";
+      if (formData.password && formData.password.length < 6) {
+        stepErrors.password = "Password must be at least 6 characters (or leave empty)";
+      }
+
+      if (formData.organizationCutPercentage !== "") {
+        const num = parseFloat(formData.organizationCutPercentage);
+        if (isNaN(num) || num < 0 || num > 30) {
+          stepErrors.organizationCutPercentage = "Cut percentage must be between 0% and 30%";
+        }
+      }
     }
 
-    if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
+    if (stepNumber === 2) {
+      if (!formData.fullName.trim()) stepErrors.fullName = "Full name is required";
+
+      if (formData.age) {
+        const ageNum = parseInt(formData.age, 10);
+        if (isNaN(ageNum) || ageNum < 1 || ageNum > 120) {
+          stepErrors.age = "Please enter a valid age (1-120)";
+        }
+      }
+
+      if (formData.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
+        stepErrors.contactEmail = "Please enter a valid email address";
+      }
+
+      if (formData.contactPhone) {
+        const phoneDigits = formData.contactPhone.replace(/\D/g, "");
+        if (phoneDigits.length !== 10) {
+          stepErrors.contactPhone = "Phone number must have exactly 10 digits";
+        }
+      }
+    }
+
+    if (stepNumber === 3) {
+      // Skills & background are optional but validated for safety
+    }
+
+    if (stepNumber === 4) {
+      if (!formData.agreeToTerms) {
+        stepErrors.agreeToTerms = "You must agree to the Terms & Conditions";
+      }
+    }
+
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setError("");
+      setCurrentStep((p) => Math.min(4, p + 1));
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      const usernameRegex = /^(?![0-9]+$)(?!.*\.\.)(?!\.)(?!.*\.$)[a-zA-Z0-9._]{3,30}$/;
-      if (!usernameRegex.test(formData.username.trim())) {
-        newErrors.username = "Username must be 3-30 characters, can contain letters, numbers, dots, and underscores. Cannot be all digits, cannot start/end with a dot, and cannot have consecutive dots.";
-      }
+      setError("Please complete all required fields highlighted in red.");
     }
+  };
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
-    }
-
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required";
-    }
-
-    if (!formData.age) {
-      newErrors.age = "Age is required";
-    } else {
-      const ageNum = parseInt(formData.age);
-      if (isNaN(ageNum) || ageNum < 10 || ageNum > 90) {
-        newErrors.age = "Age must be between 10 and 90";
-      }
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = "Gender is required";
-    }
-
-    if (formData.skillset.length === 0) {
-      newErrors.skillset = "Please select at least one skill";
-    }
-
-    if (formData.organizationCutPercentage) {
-      const cp = parseFloat(String(formData.organizationCutPercentage));
-      if (isNaN(cp) || cp < 0 || cp > 100) {
-        newErrors.organizationCutPercentage = "Commission percentage must be between 0 and 100";
-      }
-    }
-
-    if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = "You must agree to the Terms & Conditions";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleBack = () => {
+    setError("");
+    setCurrentStep((p) => Math.max(1, p - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess(false);
-
-    if (!validateForm()) {
-      setError("Please fill in all required fields correctly");
-      return;
+    e?.preventDefault();
+    for (let s = 1; s <= 4; s++) {
+      if (!validateStep(s)) {
+        setCurrentStep(s);
+        setError(`Please check Step ${s} before registering.`);
+        return;
+      }
     }
 
     setLoading(true);
+    setError("");
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("username", formData.username.trim().toLowerCase());
-      formDataToSend.append("password", formData.password);
+      formDataToSend.append("username", formData.username.trim());
+      if (formData.password) formDataToSend.append("password", formData.password);
       formDataToSend.append("organizationId", formData.organizationId);
-      formDataToSend.append("fullName", formData.fullName);
-      formDataToSend.append("age", formData.age);
-      formDataToSend.append("gender", formData.gender);
+      formDataToSend.append("fullName", formData.fullName.trim());
+      formDataToSend.append("age", formData.age || "");
+      formDataToSend.append("gender", formData.gender || "");
       formDataToSend.append("skillset", JSON.stringify(formData.skillset));
       formDataToSend.append("experience", formData.experience || "");
       formDataToSend.append("location", formData.location || "");
       formDataToSend.append("address", formData.address || "");
-      if (formData.contactPhone) {
-        formDataToSend.append("contactPhone", formData.contactPhone);
-      }
-      if (formData.contactEmail) {
-        formDataToSend.append("contactEmail", formData.contactEmail);
-      }
+      if (formData.contactPhone) formDataToSend.append("contactPhone", formData.contactPhone);
+      if (formData.contactEmail) formDataToSend.append("contactEmail", formData.contactEmail);
       formDataToSend.append("bio", formData.bio || "");
       formDataToSend.append("languages", JSON.stringify(formData.languages));
       if (formData.healthConditions) {
         formDataToSend.append("healthConditions", formData.healthConditions);
       }
-      if (formData.organizationCutPercentage !== "" && formData.organizationCutPercentage !== null && formData.organizationCutPercentage !== undefined) {
+      if (formData.organizationCutPercentage !== "") {
         formDataToSend.append("organizationCutPercentage", String(formData.organizationCutPercentage));
       }
-      if (profilePicture) {
-        formDataToSend.append("profilePicture", profilePicture);
-      }
+      if (profilePicture) formDataToSend.append("profilePicture", profilePicture);
       if (formData.verificationDocument) {
         formDataToSend.append("verificationDocument", formData.verificationDocument);
       }
@@ -412,31 +343,24 @@ export function RegisterHomeless() {
       });
 
       if (!response.ok) {
-        let errorMessage = "Failed to register";
+        let msg = "Failed to register beneficiary";
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (parseError) {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          const errData = await response.json();
+          msg = errData.message || errData.error || msg;
+        } catch {
+          msg = `Server error: ${response.status} ${response.statusText}`;
         }
-        throw new Error(errorMessage);
+        throw new Error(msg);
       }
 
       const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.message || "Failed to register");
-      }
+      if (!data.success) throw new Error(data.message || "Failed to register beneficiary");
 
       setSuccess(true);
-      setError("");
-
-      setTimeout(() => {
-        navigate("/dashboard/homeless");
-      }, 500);
+      setTimeout(() => navigate("/dashboard/homeless"), 700);
     } catch (err) {
-      console.error("Registration error:", err);
-      setError(err.message || "An error occurred. Please try again.");
+      console.error("Beneficiary registration error:", err);
+      setError(err.message || "An error occurred during registration.");
       setSuccess(false);
     } finally {
       setLoading(false);
@@ -444,752 +368,649 @@ export function RegisterHomeless() {
   };
 
   return (
-    <div className="register-homeless-container">
-      <div className="register-homeless-wrapper">
-        {/* Back Button */}
-        <div className="back-button-container">
+    <div className="space-y-6 pb-28">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-[#E7ECF2] shadow-sm">
+        <div className="flex items-center gap-3">
           <button
-            type="button"
-            className="back-button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/dashboard/homeless")}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl border border-[#E7ECF2] text-[#68778D] hover:text-[#172033] hover:bg-slate-50 transition-all flex items-center gap-2 text-xs font-semibold"
           >
-            <ArrowLeftIcon className="back-button-icon" />
-            <span className="back-button-text">Back</span>
+            <ArrowLeft className="w-4 h-4 text-[#68778D]" />
+            <span className="hidden sm:inline">Back to Homeless Users</span>
+          </button>
+          <div className="h-6 w-px bg-[#E7ECF2]" />
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-[#172033] leading-tight">
+              Register Beneficiary Profile
+            </h1>
+            <p className="text-xs text-[#68778D]">
+              Four-step registration to enroll individuals under partner sponsorship
+            </p>
+          </div>
+        </div>
+        <div className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#EAF3FF] text-[#2878E5] border border-[#2878E5]/20 self-start sm:self-center">
+          Step {currentStep} of 4: {STEPS[currentStep - 1].title}
+        </div>
+      </div>
+
+      {/* 4-Step Indicator */}
+      <div className="bg-white rounded-2xl border border-[#E7ECF2] p-4 sm:p-5 shadow-card">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          {STEPS.map((s) => {
+            const isCompleted = s.id < currentStep;
+            const isCurrent = s.id === currentStep;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  if (s.id < currentStep) setCurrentStep(s.id);
+                  else if (validateStep(currentStep)) setCurrentStep(s.id);
+                }}
+                className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                  isCurrent
+                    ? "bg-[#EAF3FF]/60 border-[#2878E5] shadow-sm ring-1 ring-[#2878E5]/30"
+                    : isCompleted
+                    ? "bg-slate-50 border-emerald-200 hover:bg-slate-100"
+                    : "bg-slate-50/50 border-[#E7ECF2] opacity-70"
+                }`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold transition-all ${
+                    isCompleted
+                      ? "bg-emerald-600 text-white"
+                      : isCurrent
+                      ? "bg-[#2878E5] text-white shadow-sm"
+                      : "bg-white border border-[#E7ECF2] text-[#68778D]"
+                  }`}
+                >
+                  {isCompleted ? <CheckCircle2 className="w-5 h-5 text-white" /> : s.id}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`text-xs font-bold truncate ${
+                      isCurrent ? "text-[#2878E5]" : isCompleted ? "text-emerald-800" : "text-[#172033]"
+                    }`}
+                  >
+                    {s.title}
+                  </p>
+                  <p className="text-[11px] text-[#68778D] truncate hidden sm:block">{s.desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+          <span className="font-medium flex-1">{error}</span>
+          <button onClick={() => setError("")} className="text-rose-600 hover:text-rose-800 p-1">
+            ✕
           </button>
         </div>
+      )}
 
-        {/* Main Card */}
-        <div className="main-card">
-          <div className="card-body">
-            {/* Header */}
-            <div className="header-section">
-              <h1 className="header-title">Register as Homeless User</h1>
-              <p className="header-subtitle">Fill in your details to create your profile</p>
-            </div>
+      {success && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-sm">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+          <span className="font-semibold flex-1">
+            Beneficiary registered successfully! Redirecting...
+          </span>
+        </div>
+      )}
 
+      {/* Form Container */}
+      <div className="max-w-[1040px] mx-auto bg-white rounded-2xl border border-[#E7ECF2] shadow-card overflow-hidden">
+        <div className="px-6 py-4 bg-[#FAFBFD] border-b border-[#E7ECF2] flex items-center justify-between">
+          <div>
+            <h2 className="text-sm sm:text-base font-bold text-[#172033]">
+              {STEPS[currentStep - 1].title}
+            </h2>
+            <p className="text-xs text-[#68778D]">{STEPS[currentStep - 1].desc}</p>
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3]">
+            Step {currentStep} of 4
+          </span>
+        </div>
 
-
-            <form onSubmit={handleSubmit} className="register-form">
-              {/* Profile Picture Section */}
-              <div className="form-section">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("profile")}
-                  className="section-header"
-                >
-                  <div className="section-header-content">
-                    <div className="section-icon-wrapper">
-                      <PhotoIcon className="section-icon" />
-                    </div>
-                    <div>
-                      <h2 className="section-title">Profile Picture</h2>
-                      <p className="section-subtitle">Upload your profile photo</p>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`chevron-icon ${openSections.profile ? "rotated" : ""}`}
-                  />
-                </button>
-
-                {openSections.profile && (
-                  <div className="section-content">
-                    <div className="profile-picture-container">
-                      <input
-                        type="file"
-                        id="profilePicture"
-                        accept="image/*"
-                        onChange={handleProfilePictureChange}
-                        style={{ display: 'none' }}
-                      />
-                      <label
-                        htmlFor="profilePicture"
-                        className="profile-picture-label"
+        <div className="p-5 sm:p-7 space-y-6">
+          {/* STEP 1: SPONSOR & IDENTITY */}
+          {currentStep === 1 && (
+            <div className="space-y-5">
+              {/* Profile Photo */}
+              <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] flex flex-col sm:flex-row items-center gap-4">
+                <input
+                  type="file"
+                  id="profile-pic"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="hidden"
+                />
+                <label htmlFor="profile-pic" className="cursor-pointer flex-shrink-0 relative group">
+                  {profilePreview ? (
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E7ECF2] shadow-sm bg-white">
+                      <img src={profilePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removeProfilePicture();
+                        }}
+                        className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 shadow-sm hover:bg-rose-700 transition-colors"
                       >
-                        {profilePreview ? (
-                          <div className="profile-picture-wrapper">
-                            <img
-                              src={profilePreview}
-                              alt="Profile preview"
-                              className="profile-picture-preview"
-                            />
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeProfilePicture();
-                              }}
-                              className="profile-picture-close-btn"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="profile-picture-upload-area">
-                            <PhotoIcon style={{ width: '3rem', height: '3rem', color: '#9ca3af' }} />
-                          </div>
-                        )}
-                      </label>
-                      <p className="help-text profile-picture-help-text">
-                        Click to upload profile picture
-                      </p>
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-[#2878E5]/40 hover:border-[#2878E5] bg-white flex flex-col items-center justify-center text-[#2878E5] group-hover:bg-blue-50/50 transition-colors">
+                      <UploadCloud className="w-6 h-6 mb-1 text-[#2878E5]" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Photo</span>
+                    </div>
+                  )}
+                </label>
+                <div className="flex-1 text-center sm:text-left space-y-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-xs font-bold text-[#172033]">Beneficiary Profile Photo</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/60 text-[#68778D] font-medium">
+                      Optional
+                    </span>
                   </div>
+                  <p className="text-xs text-[#68778D]">
+                    Upload a recognizable portrait for identification and badge printing (JPG, PNG, WEBP &lt; 5MB).
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Organization Sponsor */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Sponsoring Organization <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#98A2B3] pointer-events-none" />
+                    <select
+                      name="organizationId"
+                      value={formData.organizationId}
+                      onChange={handleChange}
+                      disabled={isOrganizationLocked}
+                      className={`w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                        errors.organizationId
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                          : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                      } ${isOrganizationLocked ? "bg-slate-100 cursor-not-allowed opacity-80" : ""}`}
+                    >
+                      <option value="">Select Sponsoring Organization</option>
+                      {organizations.map((org) => (
+                        <option key={org.id} value={org.id}>
+                          {org.name || org.orgName} ({org.city || "National"})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.organizationId ? (
+                    <p className="text-[11px] text-rose-500 font-medium">{errors.organizationId}</p>
+                  ) : (
+                    <p className="text-[11px] text-[#98A2B3]">
+                      Organization managing this profile and supervising donor disbursements
+                    </p>
+                  )}
+                </div>
+
+                {/* Username */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Public Username / Handle <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#98A2B3] pointer-events-none" />
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      placeholder="e.g. john_doe"
+                      className={`w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                        errors.username
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                          : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                      }`}
+                    />
+                  </div>
+                  {errors.username ? (
+                    <p className="text-[11px] text-rose-500 font-medium">{errors.username}</p>
+                  ) : (
+                    <p className="text-[11px] text-[#98A2B3]">Unique handle for donor QR profile</p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Account Password (Optional)
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#98A2B3] pointer-events-none" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Leave blank if non-digital user"
+                      className={`w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                        errors.password
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                          : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#98A2B3] hover:text-[#172033]"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-[11px] text-rose-500">{errors.password}</p>}
+                </div>
+
+                {/* Organization Cut Percentage */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Organization Service Retainer Cut % (Optional, Max 30%)
+                  </label>
+                  <input
+                    type="text"
+                    name="organizationCutPercentage"
+                    value={formData.organizationCutPercentage}
+                    onChange={handleChange}
+                    placeholder="e.g. 10 (Defaults to organization default if empty)"
+                    className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                      errors.organizationCutPercentage
+                        ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                        : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                    }`}
+                  />
+                  {errors.organizationCutPercentage && (
+                    <p className="text-[11px] text-rose-500">{errors.organizationCutPercentage}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: PERSONAL & CONTACT */}
+          {currentStep === 2 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Full Legal Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="e.g. Johnathan Carter"
+                  className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                    errors.fullName
+                      ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                      : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                  }`}
+                />
+                {errors.fullName && <p className="text-[11px] text-rose-500">{errors.fullName}</p>}
+              </div>
+
+              {/* Age */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#172033]">Age (Years)</label>
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  placeholder="e.g. 42"
+                  min="1"
+                  max="120"
+                  className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                    errors.age
+                      ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                      : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                  }`}
+                />
+                {errors.age && <p className="text-[11px] text-rose-500">{errors.age}</p>}
+              </div>
+
+              {/* Gender */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#172033]">Gender</label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 focus:outline-none transition-all"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-Binary">Non-Binary</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {/* Contact Phone */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Contact Phone (Personal or Case Worker)
+                </label>
+                <input
+                  type="tel"
+                  name="contactPhone"
+                  value={formData.contactPhone}
+                  onChange={handleChange}
+                  placeholder="(555) 123-4567"
+                  className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                    errors.contactPhone
+                      ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                      : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                  }`}
+                />
+                {errors.contactPhone && (
+                  <p className="text-[11px] text-rose-500">{errors.contactPhone}</p>
                 )}
               </div>
 
-              {/* Personal Information Section */}
-              <div className="form-section">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("personal")}
-                  className="section-header"
-                >
-                  <div className="section-header-content">
-                    <div className="section-icon-wrapper">
-                      <UserIcon className="section-icon" />
-                    </div>
-                    <div>
-                      <h2 className="section-title">Personal Information</h2>
-                      <p className="section-subtitle">Your basic personal details</p>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`chevron-icon ${openSections.personal ? "rotated" : ""}`}
-                  />
-                </button>
+              {/* Contact Email */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Contact Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  name="contactEmail"
+                  value={formData.contactEmail}
+                  onChange={handleChange}
+                  placeholder="contact@individual.org"
+                  className={`w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border rounded-xl focus:outline-none transition-all ${
+                    errors.contactEmail
+                      ? "border-rose-400 focus:ring-2 focus:ring-rose-500/20"
+                      : "border-[#E7ECF2] focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10"
+                  }`}
+                />
+                {errors.contactEmail && (
+                  <p className="text-[11px] text-rose-500">{errors.contactEmail}</p>
+                )}
+              </div>
 
-                {openSections.personal && (
-                  <div className="section-content">
-                    <div className="form-grid">
-                      <div className="form-field form-field-full">
-                        <label htmlFor="organizationId" className="form-label">
-                          <BuildingOffice2Icon className="label-icon" />
-                          Organization <span className="required-asterisk">*</span>
-                          {isOrganizationLocked && (
-                            <span className="pre-selected-badge">(Pre-selected)</span>
-                          )}
-                        </label>
-                        <div className="select-wrapper">
-                          <div className={`select-overlay ${errors.organizationId ? 'error' : ''}`} />
-                          <div className="select-inner">
-                            {loadingOrgs ? (
-                              <div className="loading-text">Loading organizations...</div>
-                            ) : isOrganizationLocked && selectedOrganization ? (
-                              <div className="readonly-display">
-                                {selectedOrganization.name} {selectedOrganization.city && selectedOrganization.state ? `(${selectedOrganization.city}, ${selectedOrganization.state})` : ''}
-                              </div>
-                            ) : (
-                              <select
-                                key={`org-select-${selectKey}-${formData.organizationId || 'empty'}-${isOrganizationLocked}`}
-                                id="organizationId"
-                                value={formData.organizationId ? String(formData.organizationId) : ""}
-                                onChange={(e) => {
-                                  if (!isOrganizationLocked) {
-                                    const value = e.target.value;
-                                    const orgId = value || "";
-                                    setFormData(prev => ({ ...prev, organizationId: orgId }));
-                                    const org = organizations.find(o => String(o.id) === String(value));
-                                    setSelectedOrganization(org);
-                                    if (errors.organizationId) {
-                                      setErrors(prev => ({ ...prev, organizationId: "" }));
-                                    }
-                                  }
-                                }}
-                                disabled={isOrganizationLocked || loadingOrgs}
-                                className="select-field"
-                                style={{ zIndex: 20 }}
-                              >
-                                {organizations.length === 0 ? (
-                                  <option value="" disabled>No organizations available</option>
-                                ) : (
-                                  <>
-                                    {!isOrganizationLocked && <option value="">Select an organization</option>}
-                                    {organizations.map((org) => (
-                                      <option key={String(org.id)} value={String(org.id)}>
-                                        {org.name} {org.city && org.state ? `(${org.city}, ${org.state})` : ''}
-                                      </option>
-                                    ))}
-                                  </>
-                                )}
-                              </select>
-                            )}
-                          </div>
-                        </div>
-                        {errors.organizationId && (
-                          <div className="error-message">{errors.organizationId}</div>
-                        )}
-                        <p className="help-text">
-                          {isOrganizationLocked
-                            ? "Organization is pre-selected from the organization details page"
-                            : "Select the organization this homeless individual belongs to"}
+              {/* Bio / Background Story */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Brief Personal Story & Background (Public facing)
+                </label>
+                <textarea
+                  name="bio"
+                  rows={3}
+                  value={formData.bio}
+                  onChange={handleChange}
+                  placeholder="Share a short summary of how the individual came to the program and their goals..."
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 focus:outline-none transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: SKILLS & BACKGROUND */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              {/* Skillset checkboxes */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Select Relevant Skills & Trades
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                  {SKILLS_OPTIONS.map((skill) => {
+                    const isSelected = formData.skillset.includes(skill);
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => handleToggleArrayItem("skillset", skill)}
+                        className={`p-2.5 rounded-xl border text-xs font-medium text-left flex items-center justify-between transition-all ${
+                          isSelected
+                            ? "bg-[#EAF3FF] border-[#2878E5] text-[#2878E5] shadow-sm font-semibold"
+                            : "bg-white border-[#E7ECF2] text-[#68778D] hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="truncate">{skill}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#2878E5] flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Work Experience */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Work History & Prior Experience
+                </label>
+                <textarea
+                  name="experience"
+                  rows={3}
+                  value={formData.experience}
+                  onChange={handleChange}
+                  placeholder="e.g. 5 years in residential carpentry, warehouse stocking, prep cook..."
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 focus:outline-none transition-all"
+                />
+              </div>
+
+              {/* Languages */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-[#172033]">Languages Spoken</label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES_OPTIONS.map((lang) => {
+                    const isSelected = formData.languages.includes(lang);
+                    return (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => handleToggleArrayItem("languages", lang)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                          isSelected
+                            ? "bg-[#2878E5] text-white border-[#2878E5]"
+                            : "bg-white border-[#E7ECF2] text-[#68778D] hover:bg-slate-50"
+                        }`}
+                      >
+                        {lang}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: LOCATION & VERIFICATION */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* General Location */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Current City / Neighborhood
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g. Downtown San Francisco, Mission District"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 focus:outline-none transition-all"
+                  />
+                </div>
+
+                {/* Shelter Address */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Shelter or Mailing Address
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="e.g. 550 Larkin St Shelter"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 focus:outline-none transition-all"
+                  />
+                </div>
+
+                {/* Health Conditions */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <label className="block text-xs font-bold text-[#172033]">
+                    Health Considerations / Special Accommodations
+                  </label>
+                  <textarea
+                    name="healthConditions"
+                    rows={2}
+                    value={formData.healthConditions}
+                    onChange={handleChange}
+                    placeholder="Dietary requirements, mobility limitations, chronic treatments..."
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#E7ECF2] rounded-xl focus:border-[#2878E5] focus:ring-2 focus:ring-[#2878E5]/10 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Verification Document Upload */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-[#172033]">
+                  Identity Verification Document (State ID, Intake Form, or Shelter Card)
+                </label>
+                {formData.verificationDocument ? (
+                  <div className="p-3 bg-[#F7F9FC] border border-[#E7ECF2] rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText className="w-5 h-5 text-[#2878E5] flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-[#172033] truncate">
+                          {formData.verificationDocument.name}
+                        </p>
+                        <p className="text-[10px] text-[#98A2B3]">
+                          {(formData.verificationDocument.size / 1024).toFixed(1)} KB
                         </p>
                       </div>
-
-                      <div className="form-field">
-                        <label htmlFor="username" className="form-label">
-                          Username <span className="required-asterisk">*</span>
-                        </label>
-                        <div className="input-wrapper">
-                          <div className={`input-overlay ${errors.username ? 'error' : ''}`} />
-                          <div className="input-inner">
-                            <input
-                              id="username"
-                              type="text"
-                              name="username"
-                              value={formData.username}
-                              onChange={handleChange}
-                              placeholder="Enter username"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                        {errors.username && (
-                          <div className="error-message">{errors.username}</div>
-                        )}
-                        <p className="help-text">
-                          3-30 characters. Letters, numbers, dots, and underscores allowed. Cannot be all digits, cannot start/end with a dot.
-                        </p>
-                      </div>
-
-                      <div className="form-field">
-                        <label htmlFor="password" className="form-label">
-                          Password <span className="required-asterisk">*</span>
-                        </label>
-                        <div className="input-wrapper">
-                          <div className={`input-overlay ${errors.password ? 'error' : ''}`} />
-                          <div className="input-inner" style={{ position: 'relative' }}>
-                            <input
-                              id="password"
-                              type={showPassword ? "text" : "password"}
-                              name="password"
-                              value={formData.password}
-                              onChange={handleChange}
-                              placeholder="Enter password"
-                              className="input-field"
-                              style={{ paddingRight: '2.5rem' }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="password-toggle"
-                            >
-                              {showPassword ? (
-                                <EyeSlashIcon className="password-toggle-icon" />
-                              ) : (
-                                <EyeIcon className="password-toggle-icon" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                        {errors.password && (
-                          <div className="error-message">{errors.password}</div>
-                        )}
-                        <p className="help-text">Must be at least 8 characters long</p>
-                      </div>
-
-                      <div className="form-field form-field-full">
-                        <label htmlFor="fullName" className="form-label">
-                          Full Name <span className="required-asterisk">*</span>
-                        </label>
-                        <div className="input-wrapper">
-                          <div className={`input-overlay ${errors.fullName ? 'error' : ''}`} />
-                          <div className="input-inner">
-                            <input
-                              id="fullName"
-                              type="text"
-                              name="fullName"
-                              value={formData.fullName}
-                              onChange={handleChange}
-                              placeholder="Enter your full name"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                        {errors.fullName && (
-                          <div className="error-message">{errors.fullName}</div>
-                        )}
-                      </div>
-
-                      <div className="form-field">
-                        <label htmlFor="age" className="form-label">
-                          Age <span className="required-asterisk">*</span>
-                        </label>
-                        <div className="input-wrapper">
-                          <div className={`input-overlay ${errors.age ? 'error' : ''}`} />
-                          <div className="input-inner">
-                            <input
-                              id="age"
-                              type="number"
-                              name="age"
-                              value={formData.age}
-                              onChange={handleChange}
-                              placeholder="Enter age"
-                              min="10"
-                              max="90"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                        {errors.age && (
-                          <div className="error-message">{errors.age}</div>
-                        )}
-                        <p className="help-text">Age must be between 10 and 90</p>
-                      </div>
-
-                      <div className="form-field">
-                        <label className="form-label" style={{ marginBottom: '0.5rem' }}>
-                          Gender <span className="required-asterisk">*</span>
-                        </label>
-                        <div className="radio-group">
-                          {["Male", "Female", "Prefer not to say"].map((gender) => (
-                            <label key={gender} className="radio-option">
-                              <input
-                                type="radio"
-                                name="gender"
-                                value={gender}
-                                checked={formData.gender === gender}
-                                onChange={handleChange}
-                                className="radio-input"
-                              />
-                              <span style={{ fontSize: '0.875rem', color: '#374151' }}>{gender}</span>
-                            </label>
-                          ))}
-                        </div>
-                        {errors.gender && (
-                          <div className="error-message">{errors.gender}</div>
-                        )}
-                      </div>
-
-                      <div className="form-field form-field-full">
-                        <label htmlFor="bio" className="form-label">
-                          Short Bio / Description
-                        </label>
-                        <div className="input-wrapper">
-                          <div className={`input-overlay ${errors.bio ? 'error' : ''}`} />
-                          <div className="input-inner">
-                            <textarea
-                              id="bio"
-                              name="bio"
-                              value={formData.bio}
-                              onChange={handleChange}
-                              placeholder="Tell us about your background, needs, or abilities..."
-                              rows={4}
-                              className="textarea-field"
-                            />
-                          </div>
-                        </div>
-                        <p className="help-text">Optional: Share your story, skills, or what you need help with</p>
-                      </div>
-
-                      <div className="form-field" style={{ maxWidth: '12rem' }}>
-                        <label htmlFor="organizationCutPercentage" className="form-label">
-                          Commission Cut (%)
-                        </label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div className="input-wrapper" style={{ flex: '1', minWidth: '0' }}>
-                            <div className={`input-overlay ${errors.organizationCutPercentage ? 'error' : ''}`} />
-                            <div className="input-inner">
-                              <input
-                                id="organizationCutPercentage"
-                                type="text"
-                                name="organizationCutPercentage"
-                                value={formData.organizationCutPercentage}
-                                onChange={handleChange}
-                                placeholder="10"
-                                className="input-field"
-                              />
-                            </div>
-                          </div>
-                          <span style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>%</span>
-                        </div>
-                        {errors.organizationCutPercentage && (
-                          <div className="error-message">{errors.organizationCutPercentage}</div>
-                        )}
-                        <p className="help-text">Optional: enter commission percentage (0-100)</p>
-                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={removeDocument}
+                      className="p-1 text-[#98A2B3] hover:text-rose-600 rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
-              </div>
-
-              {/* Skills & Experience Section */}
-              <div className="form-section">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("skills")}
-                  className="section-header"
-                >
-                  <div className="section-header-content">
-                    <div className="section-icon-wrapper">
-                      <DocumentTextIcon className="section-icon" />
-                    </div>
-                    <div>
-                      <h2 className="section-title">Skills & Experience</h2>
-                      <p className="section-subtitle">Your skills and work experience</p>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`chevron-icon ${openSections.skills ? "rotated" : ""}`}
-                  />
-                </button>
-
-                {openSections.skills && (
-                  <div className="section-content">
-                    <div className="form-grid">
-                      <div className="form-field form-field-full">
-                        <label className="form-label" style={{ marginBottom: '0.5rem' }}>
-                          Skillset <span className="required-asterisk">*</span>
-                        </label>
-                        <div className="checkbox-grid">
-                          {SKILLS_OPTIONS.map((skill) => (
-                            <label key={skill} className="checkbox-option">
-                              <input
-                                type="checkbox"
-                                checked={formData.skillset.includes(skill)}
-                                onChange={() => handleMultiSelect("skillset", skill)}
-                                className="checkbox-input"
-                              />
-                              <span style={{ fontSize: '0.875rem', color: '#374151' }}>{skill}</span>
-                            </label>
-                          ))}
-                        </div>
-                        {errors.skillset && (
-                          <div className="error-message">{errors.skillset}</div>
-                        )}
-                      </div>
-
-                      <div className="form-field form-field-full">
-                        <label htmlFor="experience" className="form-label">
-                          Experience
-                        </label>
-                        <div className="input-wrapper">
-                          <div className="input-overlay" />
-                          <div className="input-inner">
-                            <input
-                              id="experience"
-                              type="text"
-                              name="experience"
-                              value={formData.experience}
-                              onChange={handleChange}
-                              placeholder="e.g., 5 years in construction, or describe your experience"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                        <p className="help-text">Optional: Years of experience or description</p>
-                      </div>
-
-                      <div className="form-field form-field-full">
-                        <label className="form-label" style={{ marginBottom: '0.5rem' }}>
-                          Languages Known
-                        </label>
-                        <div className="checkbox-grid">
-                          {LANGUAGES_OPTIONS.map((language) => (
-                            <label key={language} className="checkbox-option">
-                              <input
-                                type="checkbox"
-                                checked={formData.languages.includes(language)}
-                                onChange={() => handleMultiSelect("languages", language)}
-                                className="checkbox-input"
-                              />
-                              <span style={{ fontSize: '0.875rem', color: '#374151' }}>{language}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="form-field form-field-full">
-                        <label htmlFor="healthConditions" className="form-label">
-                          Health Conditions (Optional)
-                        </label>
-                        <div className="input-wrapper">
-                          <div className="input-overlay" />
-                          <div className="input-inner">
-                            <textarea
-                              id="healthConditions"
-                              name="healthConditions"
-                              value={formData.healthConditions}
-                              onChange={handleChange}
-                              placeholder="Any health conditions or special needs..."
-                              rows={3}
-                              className="textarea-field"
-                            />
-                          </div>
-                        </div>
-                        <p className="help-text">This information helps NGOs provide better care</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Location & Contact Section */}
-              <div className="form-section">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("location")}
-                  className="section-header"
-                >
-                  <div className="section-header-content">
-                    <div className="section-icon-wrapper">
-                      <MapPinIcon className="section-icon" />
-                    </div>
-                    <div>
-                      <h2 className="section-title">Location & Contact</h2>
-                      <p className="section-subtitle">Your location and contact information</p>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`chevron-icon ${openSections.location ? "rotated" : ""}`}
-                  />
-                </button>
-
-                {openSections.location && (
-                  <div className="section-content">
-                    <div className="form-grid">
-                      <div className="form-field form-field-full">
-                        <label htmlFor="address" className="form-label">
-                          Address
-                        </label>
-                        <div className="input-wrapper">
-                          <div className="input-overlay" />
-                          <div className="input-inner">
-                            <input
-                              id="address"
-                              type="text"
-                              name="address"
-                              value={formData.address}
-                              onChange={handleChange}
-                              placeholder="Enter your address"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                        <p className="help-text">Optional: Manual address entry</p>
-                      </div>
-
-                      <div className="form-field">
-                        <label htmlFor="contactPhone" className="form-label">
-                          <PhoneIcon className="label-icon" />
-                          Phone Number
-                        </label>
-                        <div className="input-wrapper">
-                          <div className="input-overlay" />
-                          <div className="input-inner">
-                            <input
-                              id="contactPhone"
-                              type="tel"
-                              name="contactPhone"
-                              value={formData.contactPhone}
-                              onChange={handleChange}
-                              placeholder="+1 (555) 123-4567"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="form-field">
-                        <label htmlFor="contactEmail" className="form-label">
-                          <EnvelopeIcon className="label-icon" />
-                          Email Address
-                        </label>
-                        <div className="input-wrapper">
-                          <div className="input-overlay" />
-                          <div className="input-inner">
-                            <input
-                              id="contactEmail"
-                              type="email"
-                              name="contactEmail"
-                              value={formData.contactEmail}
-                              onChange={handleChange}
-                              placeholder="email@example.com"
-                              className="input-field"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Verification Document Section */}
-              <div className="form-section">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("documents")}
-                  className="section-header"
-                >
-                  <div className="section-header-content">
-                    <div className="section-icon-wrapper">
-                      <DocumentTextIcon className="section-icon" />
-                    </div>
-                    <div>
-                      <h2 className="section-title">Verification Document</h2>
-                      <p className="section-subtitle">Upload ID if available (Aadhaar, local ID, etc.)</p>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`chevron-icon ${openSections.documents ? "rotated" : ""}`}
-                  />
-                </button>
-
-                {openSections.documents && (
-                  <div className="p-5 pt-0">
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-[#2878E5]/40 hover:border-[#2878E5] bg-[#FAFBFD] cursor-pointer hover:bg-blue-50/30 transition-colors text-center">
+                    <UploadCloud className="w-6 h-6 text-[#2878E5] mb-1" />
+                    <span className="text-xs font-bold text-[#2878E5]">
+                      Upload Intake or Verification Document
+                    </span>
+                    <span className="text-[11px] text-[#98A2B3]">
+                      PDF, JPG, PNG &lt; 5MB (Optional but recommended)
+                    </span>
                     <input
                       type="file"
-                      id="verificationDocument"
-                      accept="image/*,.pdf"
+                      accept="image/*,.pdf,.doc,.docx"
                       onChange={handleDocumentChange}
                       className="hidden"
                     />
-                    <label
-                      htmlFor="verificationDocument"
-                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white/70 hover:bg-white/90 transition-colors"
-                    >
-                      {documentPreview ? (
-                        <div className="relative w-full h-full">
-                          {typeof documentPreview === "string" && documentPreview.startsWith("data:image") ? (
-                            <img
-                              src={documentPreview}
-                              alt="Document preview"
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          ) : (
-                            <div className="p-4 text-center">
-                              <DocumentTextIcon className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                              <p className="text-xs text-gray-600">{documentPreview}</p>
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeDocument();
-                            }}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                          >
-                            <span className="text-xs">×</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <DocumentTextIcon className="w-10 h-10 mb-2 text-gray-400" />
-                          <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold">Click to upload</span> or drag and drop
-                          </p>
-                          <p className="text-xs text-gray-500">PDF or Image (MAX. 5MB)</p>
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                  </label>
                 )}
               </div>
 
-              {/* Terms & Conditions Section */}
-              <div className="form-section">
-                <button
-                  type="button"
-                  onClick={() => toggleSection("terms")}
-                  className="section-header"
-                >
-                  <div className="section-header-content">
-                    <div className="section-icon-wrapper">
-                      <DocumentTextIcon className="section-icon" />
-                    </div>
-                    <div>
-                      <h2 className="section-title">Terms & Conditions</h2>
-                    </div>
-                  </div>
-                  <ChevronDownIcon
-                    className={`chevron-icon ${openSections.terms ? "rotated" : ""}`}
+              {/* Terms Agreement */}
+              <div className="p-4 rounded-xl bg-[#F7F9FC] border border-[#E7ECF2] space-y-1">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="agreeToTerms"
+                    checked={formData.agreeToTerms}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded text-[#2878E5] border-gray-300 focus:ring-[#2878E5] mt-0.5"
                   />
-                </button>
-
-                {openSections.terms && (
-                  <div className="section-content">
-                    <label className="checkbox-option" style={{ alignItems: 'flex-start', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        name="agreeToTerms"
-                        checked={formData.agreeToTerms}
-                        onChange={handleChange}
-                        className="checkbox-input"
-                        style={{ marginTop: '0.25rem' }}
-                      />
-                      <span style={{ fontSize: '0.875rem', color: '#374151' }}>
-                        I agree to the <a href="#" style={{ color: '#2563eb', textDecoration: 'underline' }}>Terms & Conditions</a>
-                      </span>
-                    </label>
-                    {errors.agreeToTerms && (
-                      <div className="error-message" style={{ marginTop: '0.5rem', marginLeft: '1.75rem' }}>
-                        {errors.agreeToTerms}
-                      </div>
-                    )}
-                  </div>
+                  <span className="text-xs text-[#172033] leading-relaxed">
+                    I certify that this beneficiary profile is created with authorized consent under the participating organization's program guidelines.
+                  </span>
+                </label>
+                {errors.agreeToTerms && (
+                  <p className="text-[11px] font-medium text-rose-500 pl-6.5">{errors.agreeToTerms}</p>
                 )}
               </div>
-
-              {/* Alerts */}
-              {success && (
-                <div className="alert alert-success">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <CheckCircleIcon style={{ width: '1.25rem', height: '1.25rem' }} />
-                    <span>Registration successful! Redirecting...</span>
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <div className="alert alert-error">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span>{error}</span>
-                    <button
-                      type="button"
-                      onClick={() => setError("")}
-                      className="alert-close"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              )}
-
-
-              {/* Action Buttons */}
-              <div className="button-group">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="button button-cancel"
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !formData.agreeToTerms}
-                  className="button button-submit"
-                  style={{ color: '#ffffff' }}
-                >
-                  {loading ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff' }}>
-                      <span className="loading-spinner"></span>
-                      Processing...
-                    </span>
-                  ) : (
-                    <span style={{ color: '#ffffff' }}>Register</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Sticky Action Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E7ECF2] px-4 sm:px-8 py-3.5 shadow-lg">
+        <div className="max-w-[1040px] mx-auto flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/homeless")}
+            className="px-4 py-2 rounded-xl border border-[#E7ECF2] text-xs font-semibold text-[#68778D] hover:text-[#172033] hover:bg-slate-50 transition-colors"
+          >
+            Cancel
+          </button>
+
+          <div className="flex items-center gap-2.5">
+            {currentStep > 1 && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="px-4 py-2 rounded-xl border border-[#E7ECF2] text-xs font-semibold text-[#172033] hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+            )}
+
+            {currentStep < 4 ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-5 py-2.5 rounded-xl bg-[#2878E5] hover:bg-[#1d6cd4] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5"
+              >
+                <span>Continue to Step {currentStep + 1}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="px-6 py-2.5 rounded-xl bg-[#16A36A] hover:bg-[#128857] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Registering Profile...
+                  </span>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Register Beneficiary</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
 export default RegisterHomeless;
-
