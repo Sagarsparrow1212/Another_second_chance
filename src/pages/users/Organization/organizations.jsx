@@ -86,6 +86,8 @@ export function Organizations() {
   const menuRefs = useRef({});
   const menuElementRef = useRef(null);
 
+  const tableContainerRef = useRef(null);
+
   // Fetch summary stats across all organizations
   const fetchStats = async () => {
     try {
@@ -196,6 +198,9 @@ export function Organizations() {
 
   useEffect(() => {
     fetchStats();
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollLeft = 0;
+    }
   }, []);
 
   useEffect(() => {
@@ -688,26 +693,26 @@ export function Organizations() {
         ) : (
           <>
             {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div ref={tableContainerRef} className="overflow-x-auto w-full min-w-0">
+              <table className="w-full text-left border-collapse table-auto sm:table-fixed">
                 <thead>
                   <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[230px] sm:w-[240px] md:w-[260px] sticky left-0 bg-[#F7F9FC] z-10 shadow-[1px_0_0_0_#E7ECF2]">
                       Organization
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[145px] sm:w-[155px]">
                       Contact Information
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[200px] sm:w-[220px]">
                       Email Address
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[135px] sm:w-[145px]">
                       Verification Status
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[125px] sm:w-[135px]">
                       Registration Date
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right">
+                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right w-[135px] sm:w-[145px]">
                       Actions
                     </th>
                   </tr>
@@ -725,17 +730,17 @@ export function Organizations() {
                           isMenuOpen ? "bg-enterprise-softBlue/30" : "hover:bg-slate-50/80"
                         }`}
                       >
-                        {/* 1. Organization Column */}
-                        <td className="py-3.5 px-5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-xs border border-[#2878E5]/20 flex-shrink-0 group-hover:scale-102 transition-transform">
+                        {/* 1. Organization Column (Sticky on mobile horizontal scroll) */}
+                        <td className="py-3 px-4 sm:px-5 sticky left-0 bg-white group-hover:bg-slate-50/80 transition-colors z-10 shadow-[1px_0_0_0_#E7ECF2]">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-xs border border-[#2878E5]/20 flex-shrink-0 group-hover:scale-102 transition-transform">
                               {org.name ? org.name.charAt(0).toUpperCase() : "O"}
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-semibold text-enterprise-textPrimary group-hover:text-[#2878E5] transition-colors truncate">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs sm:text-sm font-semibold text-enterprise-textPrimary group-hover:text-[#2878E5] transition-colors truncate" title={org.name}>
                                 {org.name}
                               </p>
-                              <p className="text-[11px] text-enterprise-muted truncate">
+                              <p className="text-[11px] text-enterprise-muted truncate mt-0.5" title={org.city && org.state ? `${org.city}, ${org.state}` : org.orgType || "Non-profit Organization"}>
                                 {org.city && org.state
                                   ? `${org.city}, ${org.state}`
                                   : org.orgType || "Non-profit Organization"}
@@ -745,24 +750,27 @@ export function Organizations() {
                         </td>
 
                         {/* 2. Contact Phone */}
-                        <td className="py-3.5 px-5">
+                        <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-xs font-medium text-enterprise-textSecondary">
-                            <Phone className="w-3.5 h-3.5 text-enterprise-muted" />
-                            <span>{formatPhoneNumber(org.phone)}</span>
+                            <Phone className="w-3.5 h-3.5 text-enterprise-muted flex-shrink-0" />
+                            <span className="whitespace-nowrap">{formatPhoneNumber(org.phone)}</span>
                           </div>
                         </td>
 
                         {/* 3. Email Address + Copy interaction */}
-                        <td className="py-3.5 px-5">
-                          <div className="flex items-center gap-1.5 group/email">
-                            <span className="text-xs font-medium text-enterprise-textSecondary truncate max-w-[200px]">
+                        <td className="py-3 px-4 sm:px-5">
+                          <div className="flex items-center gap-1.5 group/email min-w-0">
+                            <span
+                              className="text-xs font-medium text-enterprise-textSecondary truncate block max-w-[190px]"
+                              title={org.email || "N/A"}
+                            >
                               {org.email || "N/A"}
                             </span>
                             {org.email && (
                               <button
                                 onClick={(e) => handleCopyEmail(org.email, e)}
                                 title="Copy Email"
-                                className="opacity-0 group-hover/email:opacity-100 p-1 hover:bg-slate-100 rounded text-enterprise-muted hover:text-enterprise-textPrimary transition-all"
+                                className="opacity-0 group-hover/email:opacity-100 p-1 hover:bg-slate-100 rounded text-enterprise-muted hover:text-enterprise-textPrimary transition-all flex-shrink-0"
                               >
                                 {copiedEmail === org.email ? (
                                   <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -775,24 +783,24 @@ export function Organizations() {
                         </td>
 
                         {/* 4. Verification Status Badge */}
-                        <td className="py-3.5 px-5">
+                        <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.badgeClass}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${status.badgeClass}`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${status.dotClass}`} />
                             {status.label}
                           </span>
                         </td>
 
                         {/* 5. Registration Date */}
-                        <td className="py-3.5 px-5">
-                          <div className="flex items-center gap-1.5 text-xs text-enterprise-muted">
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>
+                        <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-xs text-enterprise-muted whitespace-nowrap">
+                            <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                            <span className="whitespace-nowrap font-medium">
                               {org.createdAt
                                 ? new Date(org.createdAt).toLocaleDateString("en-US", {
-                                    month: "short",
                                     day: "numeric",
+                                    month: "short",
                                     year: "numeric",
                                   })
                                 : "N/A"}
@@ -801,7 +809,7 @@ export function Organizations() {
                         </td>
 
                         {/* 6. Contextual Action Buttons */}
-                        <td className="py-3.5 px-5 text-right">
+                        <td className="py-3 px-4 sm:px-5 text-right whitespace-nowrap">
                           <div
                             className="flex items-center justify-end gap-1.5"
                             onClick={(e) => e.stopPropagation()}
