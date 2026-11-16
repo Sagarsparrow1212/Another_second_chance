@@ -300,9 +300,10 @@ export function Organizations() {
   };
 
   const shouldShowReject = (org) => {
+    // Only show inline Reject button if pending or resubmitted
     if (org.isResubmitted === true || org.currentStatus === "Resubmitted") return true;
     const status = org.currentStatus || (org.verified ? "Approved" : "Pending");
-    return status !== "Rejected";
+    return status === "Pending";
   };
 
   const handleApprove = async (orgId, e) => {
@@ -692,27 +693,35 @@ export function Organizations() {
           </div>
         ) : (
           <>
-            {/* Table */}
-            <div ref={tableContainerRef} className="overflow-x-auto w-full min-w-0">
-              <table className="w-full text-left border-collapse table-auto sm:table-fixed">
+            {/* Desktop / Tablet Table View (hidden on mobile < 768px) */}
+            <div ref={tableContainerRef} className="hidden md:block overflow-x-auto w-full min-w-0">
+              <table className="w-full text-left border-collapse table-fixed">
+                <colgroup>
+                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "21%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "13%" }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
-                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[230px] sm:w-[240px] md:w-[260px] sticky left-0 bg-[#F7F9FC] z-10 shadow-[1px_0_0_0_#E7ECF2]">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
                       Organization
                     </th>
-                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[145px] sm:w-[155px]">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
                       Contact Information
                     </th>
-                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[200px] sm:w-[220px]">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
                       Email Address
                     </th>
-                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[135px] sm:w-[145px]">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
                       Verification Status
                     </th>
-                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[125px] sm:w-[135px]">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
                       Registration Date
                     </th>
-                    <th className="py-3 px-4 sm:px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right w-[135px] sm:w-[145px]">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right">
                       Actions
                     </th>
                   </tr>
@@ -730,17 +739,17 @@ export function Organizations() {
                           isMenuOpen ? "bg-enterprise-softBlue/30" : "hover:bg-slate-50/80"
                         }`}
                       >
-                        {/* 1. Organization Column (Sticky on mobile horizontal scroll) */}
-                        <td className="py-3 px-4 sm:px-5 sticky left-0 bg-white group-hover:bg-slate-50/80 transition-colors z-10 shadow-[1px_0_0_0_#E7ECF2]">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-xs border border-[#2878E5]/20 flex-shrink-0 group-hover:scale-102 transition-transform">
+                        {/* 1. Organization Column (22%) */}
+                        <td className="py-3 px-4 min-w-0">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-xs border border-[#2878E5]/20 flex-shrink-0 group-hover:scale-102 transition-transform">
                               {org.name ? org.name.charAt(0).toUpperCase() : "O"}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-xs sm:text-sm font-semibold text-enterprise-textPrimary group-hover:text-[#2878E5] transition-colors truncate" title={org.name}>
+                              <p className="text-xs font-semibold text-enterprise-textPrimary group-hover:text-[#2878E5] transition-colors truncate" title={org.name}>
                                 {org.name}
                               </p>
-                              <p className="text-[11px] text-enterprise-muted truncate mt-0.5" title={org.city && org.state ? `${org.city}, ${org.state}` : org.orgType || "Non-profit Organization"}>
+                              <p className="text-[11px] text-enterprise-muted truncate" title={org.city && org.state ? `${org.city}, ${org.state}` : org.orgType || "Non-profit Organization"}>
                                 {org.city && org.state
                                   ? `${org.city}, ${org.state}`
                                   : org.orgType || "Non-profit Organization"}
@@ -749,19 +758,19 @@ export function Organizations() {
                           </div>
                         </td>
 
-                        {/* 2. Contact Phone */}
-                        <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-xs font-medium text-enterprise-textSecondary">
+                        {/* 2. Contact Information Phone (15%) */}
+                        <td className="py-3 px-4 whitespace-nowrap min-w-0">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-enterprise-textSecondary truncate">
                             <Phone className="w-3.5 h-3.5 text-enterprise-muted flex-shrink-0" />
-                            <span className="whitespace-nowrap">{formatPhoneNumber(org.phone)}</span>
+                            <span className="truncate">{formatPhoneNumber(org.phone)}</span>
                           </div>
                         </td>
 
-                        {/* 3. Email Address + Copy interaction */}
-                        <td className="py-3 px-4 sm:px-5">
+                        {/* 3. Email Address (21%) */}
+                        <td className="py-3 px-4 min-w-0">
                           <div className="flex items-center gap-1.5 group/email min-w-0">
                             <span
-                              className="text-xs font-medium text-enterprise-textSecondary truncate block max-w-[190px]"
+                              className="text-xs font-medium text-enterprise-textSecondary truncate flex-1 block"
                               title={org.email || "N/A"}
                             >
                               {org.email || "N/A"}
@@ -782,21 +791,21 @@ export function Organizations() {
                           </div>
                         </td>
 
-                        {/* 4. Verification Status Badge */}
-                        <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
+                        {/* 4. Verification Status (14%) */}
+                        <td className="py-3 px-4 whitespace-nowrap min-w-0">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${status.badgeClass}`}
+                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${status.badgeClass}`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${status.dotClass}`} />
                             {status.label}
                           </span>
                         </td>
 
-                        {/* 5. Registration Date */}
-                        <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
+                        {/* 5. Registration Date (15%) */}
+                        <td className="py-3 px-4 whitespace-nowrap min-w-0">
                           <div className="flex items-center gap-1.5 text-xs text-enterprise-muted whitespace-nowrap">
                             <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
-                            <span className="whitespace-nowrap font-medium">
+                            <span className="whitespace-nowrap font-medium text-xs">
                               {org.createdAt
                                 ? new Date(org.createdAt).toLocaleDateString("en-US", {
                                     day: "numeric",
@@ -808,27 +817,27 @@ export function Organizations() {
                           </div>
                         </td>
 
-                        {/* 6. Contextual Action Buttons */}
-                        <td className="py-3 px-4 sm:px-5 text-right whitespace-nowrap">
+                        {/* 6. Actions (13%) */}
+                        <td className="py-3 px-4 text-right whitespace-nowrap min-w-0">
                           <div
-                            className="flex items-center justify-end gap-1.5"
+                            className="flex items-center justify-end gap-1.5 min-w-[100px]"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {/* Approve Button (shown only when eligible) */}
+                            {/* Approve Button (shown only when eligible: Pending or Resubmitted) */}
                             {shouldShowApprove(org) && (
                               <button
                                 onClick={(e) => handleApprove(org.id, e)}
-                                className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 rounded-md transition-colors"
+                                className="px-2 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 rounded-md transition-colors"
                               >
                                 Approve
                               </button>
                             )}
 
-                            {/* Reject Button (shown only when eligible) */}
+                            {/* Reject Button (shown only when eligible: Pending or Resubmitted) */}
                             {shouldShowReject(org) && (
                               <button
                                 onClick={(e) => handleReject(org.id, e)}
-                                className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 rounded-md transition-colors"
+                                className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 rounded-md transition-colors"
                               >
                                 Reject
                               </button>
@@ -836,7 +845,7 @@ export function Organizations() {
 
                             {/* More Actions Dropdown Trigger */}
                             <div
-                              className="relative"
+                              className="relative inline-block"
                               ref={(el) => {
                                 if (el) menuRefs.current[org.id] = el;
                               }}
@@ -861,6 +870,7 @@ export function Organizations() {
                                   }
                                 }}
                                 className="p-1 rounded-md text-enterprise-muted hover:text-enterprise-textPrimary hover:bg-slate-100 transition-colors"
+                                title="More options"
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </button>
@@ -872,6 +882,99 @@ export function Organizations() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card List View (visible on < 768px) */}
+            <div className="block md:hidden divide-y divide-[#E7ECF2]">
+              {filteredOrganizations.map((org) => {
+                const status = getOrganizationStatus(org);
+
+                return (
+                  <div
+                    key={org.id}
+                    onClick={() => navigate(`/dashboard/organizations/${org.id}`)}
+                    className="p-4 hover:bg-slate-50 transition-colors cursor-pointer space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-enterprise-softBlue text-[#2878E5] flex items-center justify-center font-bold text-sm border border-[#2878E5]/20 flex-shrink-0">
+                          {org.name ? org.name.charAt(0).toUpperCase() : "O"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-enterprise-textPrimary truncate">
+                            {org.name}
+                          </p>
+                          <p className="text-xs text-enterprise-muted truncate">
+                            {org.city && org.state
+                              ? `${org.city}, ${org.state}`
+                              : org.orgType || "Non-profit Organization"}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap flex-shrink-0 ${status.badgeClass}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${status.dotClass}`} />
+                        {status.label}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-enterprise-textSecondary pt-1">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Phone className="w-3.5 h-3.5 text-enterprise-muted flex-shrink-0" />
+                        <span className="truncate">{formatPhoneNumber(org.phone)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <Mail className="w-3.5 h-3.5 text-enterprise-muted flex-shrink-0" />
+                        <span className="truncate">{org.email || "N/A"}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <div className="flex items-center gap-1 text-[11px] text-enterprise-muted">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        <span>
+                          {org.createdAt
+                            ? new Date(org.createdAt).toLocaleDateString("en-US", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        {shouldShowApprove(org) && (
+                          <button
+                            onClick={(e) => handleApprove(org.id, e)}
+                            className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 rounded-md transition-colors"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {shouldShowReject(org) && (
+                          <button
+                            onClick={(e) => handleReject(org.id, e)}
+                            className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 rounded-md transition-colors"
+                          >
+                            Reject
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/dashboard/organizations/${org.id}`);
+                          }}
+                          className="px-2.5 py-1 text-xs font-medium text-enterprise-textPrimary bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Pagination & Rows Per Page Toolbar */}
