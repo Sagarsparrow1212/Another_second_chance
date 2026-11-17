@@ -30,7 +30,12 @@ import {
   Calendar,
   AlertCircle,
   Building,
+  FileSpreadsheet,
+  FileText,
+  ChevronDown,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL_V1 } from "@/configs/api";
@@ -80,6 +85,8 @@ export function Organizations() {
   const [rejecting, setRejecting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef(null);
 
   const isMountedRef = useRef(true);
   const abortControllerRef = useRef(null);
@@ -247,6 +254,20 @@ export function Organizations() {
     }
   }, [openMenuId]);
 
+  // Close export dropdown on outside click
+  useEffect(() => {
+    const handleClickOutsideExport = (event) => {
+      if (exportMenuOpen && exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setExportMenuOpen(false);
+      }
+    };
+
+    if (exportMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutsideExport);
+      return () => document.removeEventListener("mousedown", handleClickOutsideExport);
+    }
+  }, [exportMenuOpen]);
+
   const handleCopyEmail = (email, e) => {
     e.stopPropagation();
     if (!email) return;
@@ -412,7 +433,7 @@ export function Organizations() {
     }
   };
 
-  const handleExport = async () => {
+  const fetchAllOrgsForExport = async () => {
     try {
       const sessionData = localStorage.getItem("auth_session");
       const token = sessionData ? JSON.parse(sessionData).token : null;
@@ -424,7 +445,16 @@ export function Organizations() {
         },
       });
       const data = await response.json();
-      const orgsToExport = data.success ? data.data.organizations : organizations;
+      return data.success ? data.data.organizations : organizations;
+    } catch {
+      return organizations;
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      setExportMenuOpen(false);
+      const orgsToExport = await fetchAllOrgsForExport();
 
       const csvContent = [
         ["Organization Name", "Phone Number", "Email Address", "Status", "City", "State", "Country", "Registration Date"],
@@ -452,8 +482,71 @@ export function Organizations() {
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      console.error("Export error:", err);
-      setError("Failed to export organizations");
+      console.error("Export CSV error:", err);
+      setError("Failed to export organizations to CSV");
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setExportMenuOpen(false);
+      const orgsToExport = await fetchAllOrgsForExport();
+
+      const doc = new jsPDF("landscape", "pt", "a4");
+
+      // Title & Header info
+      doc.setFontSize(16);
+      doc.setTextColor(16, 27, 53); // Deep Navy #101B35
+      doc.text("Another Second Chance - Organizations Report", 40, 45);
+
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Generated on: ${new Date().toLocaleString()} | Total Records: ${orgsToExport.length}`, 40, 62);
+
+      const tableColumn = [
+        "Organization Name",
+        "Phone Number",
+        "Email Address",
+        "Status",
+        "Location",
+        "Registration Date"
+      ];
+
+      const tableRows = orgsToExport.map((org) => [
+        org.name || "N/A",
+        org.contactPhone ? formatPhoneNumber(org.contactPhone) : "N/A",
+        org.email || "N/A",
+        org.currentStatus || (org.verified ? "Approved" : "Pending"),
+        [org.city, org.state].filter(Boolean).join(", ") || org.country || "N/A",
+        org.createdAt ? new Date(org.createdAt).toLocaleDateString() : "N/A"
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 75,
+        theme: "striped",
+        headStyles: {
+          fillColor: [40, 120, 229], // #2878E5
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
+        },
+        bodyStyles: {
+          fontSize: 8.5,
+          textColor: [30, 41, 59],
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        margin: { top: 75, left: 40, right: 40, bottom: 40 },
+        styles: { overflow: "linebreak", cellPadding: 6 },
+      });
+
+      doc.save(`organizations_${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (err) {
+      console.error("Export PDF error:", err);
+      setError("Failed to export organizations to PDF");
     }
   };
 
@@ -638,14 +731,36 @@ export function Organizations() {
             Total: <span className="font-bold text-enterprise-textPrimary ml-1">{totalItems}</span>
           </div>
 
-          {/* Export Button */}
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-enterprise-textPrimary bg-white border border-[#E7ECF2] hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-subtle transition-all duration-150"
-          >
-            <Download className="w-3.5 h-3.5 text-enterprise-textSecondary" />
-            <span>Export</span>
-          </button>
+          {/* Export Dropdown (CSV / PDF) */}
+          <div className="relative inline-block" ref={exportMenuRef}>
+            <button
+              onClick={() => setExportMenuOpen(!exportMenuOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-enterprise-textPrimary bg-white border border-[#E7ECF2] hover:bg-slate-50 hover:border-slate-300 rounded-lg shadow-subtle transition-all duration-150 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-enterprise-textSecondary" />
+              <span>Export</span>
+              <ChevronDown className="w-3 h-3 text-enterprise-muted ml-0.5" />
+            </button>
+
+            {exportMenuOpen && (
+              <div className="absolute right-0 mt-1.5 w-40 bg-white rounded-xl shadow-lg border border-[#E7ECF2] py-1.5 z-30 animate-fadeIn">
+                <button
+                  onClick={handleExportCSV}
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-enterprise-textPrimary hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  <span>Export as CSV</span>
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-enterprise-textPrimary hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-rose-600" />
+                  <span>Export as PDF</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
