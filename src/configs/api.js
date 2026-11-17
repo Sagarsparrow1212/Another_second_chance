@@ -17,14 +17,22 @@ const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_BASE_URL;
   }
 
-  // When accessing from another device, use the current hostname instead of localhost
-  // This allows the frontend to connect to the backend when accessed via IP address
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    // If accessing via IP address or non-localhost hostname, use that for API
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `http://${hostname}:5000`;
+    const protocol = window.location.protocol;
+
+    // Local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000';
     }
+
+    // Production domain or HTTPS access: use same origin so Nginx proxies /api and /socket.io directly
+    if (protocol === 'https:' || hostname === 'anothersecondchance.dohost.in') {
+      return window.location.origin;
+    }
+
+    // Fallback if accessed via direct raw IP without proxy
+    return `${protocol}//${hostname}:5000`;
   }
 
   // Default to localhost for development
