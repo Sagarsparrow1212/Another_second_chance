@@ -1822,9 +1822,12 @@ export function OrganizationDetails() {
       {deleteDocConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-[#E7ECF2]">
-            <div className="flex items-center gap-3 text-rose-600 mb-4">
-              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100">
-                <Trash2 className="w-5 h-5 text-rose-600" />
+            <div className="flex items-center gap-3 mb-4">
+              <div 
+                className="p-2.5 rounded-xl border flex items-center justify-center"
+                style={{ backgroundColor: "#FEE2E2", borderColor: "#FECACA", color: "#DC2626" }}
+              >
+                <Trash2 className="w-5 h-5" style={{ color: "#DC2626" }} />
               </div>
               <div>
                 <h3 className="text-base font-bold text-[#172033]">
@@ -1861,17 +1864,18 @@ export function OrganizationDetails() {
                 type="button"
                 disabled={deletingDocLoading}
                 onClick={handleDeleteDocument}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                style={{ backgroundColor: "#DC2626", color: "#FFFFFF" }}
               >
                 {deletingDocLoading ? (
                   <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Deleting...</span>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span className="text-white">Deleting...</span>
                   </>
                 ) : (
                   <>
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Confirm Delete</span>
+                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                    <span className="text-white">Confirm Delete</span>
                   </>
                 )}
               </button>
