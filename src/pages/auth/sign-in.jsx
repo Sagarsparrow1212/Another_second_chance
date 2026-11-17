@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
   Mail,
@@ -76,119 +76,119 @@ export function SignIn() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] antialiased text-[#172033] font-sans selection:bg-[#3987F6]/20 selection:text-[#101B35]">
+    <div className="h-screen w-screen overflow-hidden flex bg-[#F8FAFC] antialiased text-[#172033] font-sans selection:bg-[#3987F6]/20 selection:text-[#101B35]">
       
       {/* =========================================================================
           LEFT PANEL: BRANDING & VISUAL STORYTELLING (48% on Desktop)
           ========================================================================= */}
-      <div className="hidden lg:flex lg:w-[48%] relative flex-col justify-between overflow-hidden bg-[#101B35] text-white p-12 xl:p-16 border-r border-[#17294B]/60">
+      <div className="hidden lg:flex lg:w-[48%] h-full relative flex-col justify-between overflow-hidden bg-[#101B35] text-white p-8 xl:p-12 border-r border-[#17294B]/60 select-none">
         {/* Subtle radial ambient glows */}
-        <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full bg-[#3987F6]/15 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-10 right-0 w-[500px] h-[500px] rounded-full bg-[#17294B] blur-3xl opacity-60" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-[#75D9F5]/10 blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#3987F6]/15 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-4 right-0 w-96 h-96 rounded-full bg-[#17294B] blur-3xl opacity-60" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 w-64 h-64 rounded-full bg-[#75D9F5]/10 blur-3xl" />
 
-        {/* Subtle geometric grid background overlay */}
+        {/* Subtle geometric dot grid background overlay */}
         <div 
           className="pointer-events-none absolute inset-0 opacity-[0.035]"
           style={{
             backgroundImage: `radial-gradient(#FFFFFF 1px, transparent 1px)`,
-            backgroundSize: "28px 28px"
+            backgroundSize: "24px 24px"
           }}
         />
 
         {/* Top Header / Logo */}
-        <div className="relative z-10 flex items-center gap-3.5">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-tr from-[#3987F6] to-[#75D9F5] p-0.5 shadow-lg shadow-[#3987F6]/20 flex items-center justify-center">
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-[#3987F6] to-[#75D9F5] p-0.5 shadow-md shadow-[#3987F6]/20 flex items-center justify-center shrink-0">
             <div className="h-full w-full bg-[#101B35] rounded-[10px] flex items-center justify-center">
               <img
                 src="/img/Logo/HomelyHopeIcon.png"
                 alt="Another Second Chance"
-                className="h-6 w-6 object-contain"
+                className="h-5 w-5 object-contain"
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "block";
                 }}
               />
-              <HeartHandshake className="hidden h-6 w-6 text-[#3987F6]" />
+              <HeartHandshake className="hidden h-5 w-5 text-[#3987F6]" />
             </div>
           </div>
           <div>
-            <span className="text-lg font-bold tracking-tight text-white block leading-tight">
+            <span className="text-base font-bold tracking-tight text-white block leading-tight">
               Another Second Chance
             </span>
-            <span className="text-xs font-medium tracking-wider uppercase text-[#75D9F5]/90">
+            <span className="text-[11px] font-semibold tracking-wider uppercase text-[#75D9F5]/90">
               Administrative Portal
             </span>
           </div>
         </div>
 
         {/* Center Content & Editorial Visual */}
-        <div className="relative z-10 my-auto py-8">
+        <div className="relative z-10 my-auto py-2 xl:py-4">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#17294B]/80 border border-[#3987F6]/25 text-[#75D9F5] text-xs font-semibold tracking-wide mb-6 backdrop-blur-md">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17294B]/80 border border-[#3987F6]/25 text-[#75D9F5] text-xs font-semibold tracking-wide mb-4 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-[#3987F6]" />
             <span>Community Empowerment Platform</span>
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight text-white leading-[1.18] mb-5">
+          <h1 className="text-3xl xl:text-4xl 2xl:text-5xl font-extrabold tracking-tight text-white leading-[1.15] mb-3">
             Every Life Deserves <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#E2E8F0] to-[#75D9F5]">
               Another Chance.
             </span>
           </h1>
 
-          <p className="text-base xl:text-lg text-[#94A3B8] leading-relaxed max-w-lg mb-10 font-normal">
+          <p className="text-sm xl:text-base text-[#94A3B8] leading-relaxed max-w-md mb-6 font-normal">
             Connecting organizations, communities, and compassionate people to create
             meaningful opportunities and lasting change.
           </p>
 
           {/* Premium Visual Card: Ecosystem Overview */}
-          <div className="relative rounded-2xl bg-gradient-to-b from-[#17294B]/90 to-[#101B35]/90 border border-white/10 p-6 backdrop-blur-xl shadow-2xl max-w-lg">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <span className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#17294B]/90 to-[#101B35]/90 border border-white/10 p-4 xl:p-5 backdrop-blur-xl shadow-xl max-w-md">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <span className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider">
                 Ecosystem Activity
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live Network
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 pt-4 text-center">
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <Building2 className="w-5 h-5 mx-auto mb-2 text-[#3987F6]" />
-                <div className="text-lg font-bold text-white leading-none">Organizations</div>
-                <div className="text-[11px] text-[#94A3B8] mt-1 font-medium">Verified Partners</div>
+            <div className="grid grid-cols-3 gap-3 pt-3 text-center">
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
+                <Building2 className="w-4 h-4 mx-auto mb-1.5 text-[#3987F6]" />
+                <div className="text-sm font-bold text-white leading-tight">Organizations</div>
+                <div className="text-[10px] text-[#94A3B8] mt-0.5 font-medium">Verified</div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <HeartHandshake className="w-5 h-5 mx-auto mb-2 text-[#75D9F5]" />
-                <div className="text-lg font-bold text-white leading-none">Merchants</div>
-                <div className="text-[11px] text-[#94A3B8] mt-1 font-medium">Local Providers</div>
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
+                <HeartHandshake className="w-4 h-4 mx-auto mb-1.5 text-[#75D9F5]" />
+                <div className="text-sm font-bold text-white leading-tight">Merchants</div>
+                <div className="text-[10px] text-[#94A3B8] mt-0.5 font-medium">Providers</div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                <Users className="w-5 h-5 mx-auto mb-2 text-[#3987F6]" />
-                <div className="text-lg font-bold text-white leading-none">Donors</div>
-                <div className="text-[11px] text-[#94A3B8] mt-1 font-medium">Active Advocates</div>
+              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
+                <Users className="w-4 h-4 mx-auto mb-1.5 text-[#3987F6]" />
+                <div className="text-sm font-bold text-white leading-tight">Donors</div>
+                <div className="text-[10px] text-[#94A3B8] mt-0.5 font-medium">Advocates</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bottom Area: Trust Indicators */}
-        <div className="relative z-10 pt-8 border-t border-[#17294B]">
-          <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-[#94A3B8] font-medium">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#3987F6]" />
+        <div className="relative z-10 pt-4 border-t border-[#17294B]">
+          <div className="flex flex-wrap items-center gap-y-1.5 gap-x-5 text-xs text-[#94A3B8] font-medium">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#3987F6]" />
               <span>Empowering Communities</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#3987F6]" />
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#3987F6]" />
               <span>Connecting Organizations</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#3987F6]" />
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#3987F6]" />
               <span>Creating Opportunities</span>
             </div>
           </div>
@@ -198,76 +198,76 @@ export function SignIn() {
       {/* =========================================================================
           RIGHT PANEL: LOGIN EXPERIENCE (52% on Desktop, Full Width Mobile)
           ========================================================================= */}
-      <div className="w-full lg:w-[52%] flex flex-col justify-between p-6 sm:p-10 md:p-12 lg:p-16 overflow-y-auto">
+      <div className="w-full lg:w-[52%] h-full flex flex-col justify-between p-6 sm:p-8 xl:p-10 overflow-hidden">
         
         {/* Mobile Header Branding (Shown only on small screens) */}
-        <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-[#E2E8F0]">
-          <div className="flex items-center gap-3">
+        <div className="lg:hidden flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
+          <div className="flex items-center gap-2.5">
             <img
               src="/img/Logo/HomelyHopeIcon.png"
               alt="Another Second Chance"
-              className="h-8 w-8 object-contain"
+              className="h-7 w-7 object-contain"
               onError={(e) => {
                 e.target.style.display = "none";
               }}
             />
-            <span className="font-bold text-[#101B35] text-base tracking-tight">
+            <span className="font-bold text-[#101B35] text-sm tracking-tight">
               Another Second Chance
             </span>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#2878E8]/10 text-[#2878E8]">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[#2878E8]/10 text-[#2878E8]">
             Admin
           </span>
         </div>
 
         {/* Center Form Container */}
-        <div className="w-full max-w-[420px] mx-auto my-auto py-4">
+        <div className="w-full max-w-[390px] xl:max-w-[420px] mx-auto my-auto">
           
           {/* Logo & Welcome Header */}
-          <div className="text-center sm:text-left mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm mb-6 p-2">
+          <div className="text-center sm:text-left mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white border border-[#E2E8F0] shadow-sm mb-3.5 p-1.5">
               <img
                 src="/img/Logo/HomelyHopeIcon.png"
                 alt="Logo"
-                className="h-10 w-10 object-contain"
+                className="h-8 w-8 object-contain"
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "block";
                 }}
               />
-              <HeartHandshake className="hidden h-8 w-8 text-[#2878E8]" />
+              <HeartHandshake className="hidden h-7 w-7 text-[#2878E8]" />
             </div>
 
-            <h2 className="text-3xl font-bold text-[#172033] tracking-tight">
+            <h2 className="text-2xl xl:text-3xl font-bold text-[#172033] tracking-tight leading-tight">
               Welcome Back
             </h2>
-            <p className="text-sm text-[#718096] mt-2 font-normal">
+            <p className="text-xs xl:text-sm text-[#718096] mt-1 font-normal">
               Sign in to access your administration portal.
             </p>
           </div>
 
           {/* Error Banner */}
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50/90 border border-red-200/80 flex items-start gap-3 text-red-700 animate-fadeIn text-sm">
-              <AlertCircle className="w-5 h-5 text-[#DC4444] shrink-0 mt-0.5" />
+            <div className="mb-4 p-3 rounded-xl bg-red-50/90 border border-red-200/80 flex items-start gap-2.5 text-red-700 animate-fadeIn text-xs">
+              <AlertCircle className="w-4 h-4 text-[#DC4444] shrink-0 mt-0.5" />
               <div className="font-medium leading-relaxed">{error}</div>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             
             {/* Email Input */}
             <div>
               <label 
                 htmlFor="admin-email" 
-                className="block text-sm font-medium text-[#172033] mb-2"
+                className="block text-xs xl:text-sm font-medium text-[#172033] mb-1.5"
               >
                 Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#718096]">
-                  <Mail className="h-5 w-5" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#718096]">
+                  <Mail className="h-4 w-4" />
                 </div>
                 <input
                   id="admin-email"
@@ -281,7 +281,7 @@ export function SignIn() {
                     if (error) setError("");
                   }}
                   placeholder="Enter your email address"
-                  className="w-full h-[52px] pl-11 pr-4 rounded-xl border border-[#E2E8F0] bg-white text-[#172033] placeholder-[#718096]/70 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#2878E8]/20 focus:border-[#2878E8] transition-all duration-200 shadow-sm"
+                  className="w-full h-[46px] xl:h-[50px] pl-10 pr-4 rounded-xl border border-[#E2E8F0] bg-white text-[#172033] placeholder-[#718096]/70 text-xs xl:text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#2878E8]/20 focus:border-[#2878E8] transition-all duration-200 shadow-sm"
                 />
               </div>
             </div>
@@ -290,13 +290,13 @@ export function SignIn() {
             <div>
               <label 
                 htmlFor="admin-password" 
-                className="block text-sm font-medium text-[#172033] mb-2"
+                className="block text-xs xl:text-sm font-medium text-[#172033] mb-1.5"
               >
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#718096]">
-                  <Lock className="h-5 w-5" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#718096]">
+                  <Lock className="h-4 w-4" />
                 </div>
                 <input
                   id="admin-password"
@@ -310,54 +310,53 @@ export function SignIn() {
                     if (error) setError("");
                   }}
                   placeholder="Enter your password"
-                  className="w-full h-[52px] pl-11 pr-12 rounded-xl border border-[#E2E8F0] bg-white text-[#172033] placeholder-[#718096]/70 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#2878E8]/20 focus:border-[#2878E8] transition-all duration-200 shadow-sm"
+                  className="w-full h-[46px] xl:h-[50px] pl-10 pr-11 rounded-xl border border-[#E2E8F0] bg-white text-[#172033] placeholder-[#718096]/70 text-xs xl:text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[#2878E8]/20 focus:border-[#2878E8] transition-all duration-200 shadow-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#718096] hover:text-[#172033] focus:outline-none transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#718096] hover:text-[#172033] focus:outline-none transition-colors"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
               </div>
             </div>
 
             {/* Remember Me & Optional Recovery Link */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <div className="flex items-center justify-between pt-0.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#CBD5E1] text-[#2878E8] focus:ring-[#2878E8]/30 transition"
+                  className="h-3.5 w-3.5 rounded border-[#CBD5E1] text-[#2878E8] focus:ring-[#2878E8]/30 transition"
                 />
-                <span className="text-sm font-normal text-[#718096] hover:text-[#172033] transition-colors">
+                <span className="text-xs xl:text-sm font-normal text-[#718096] hover:text-[#172033] transition-colors">
                   Remember me
                 </span>
               </label>
 
-              {/* Secure portal indicator or help link */}
               <span className="text-xs text-[#718096] hover:text-[#2878E8] cursor-pointer transition-colors font-medium">
                 Need help?
               </span>
             </div>
 
             {/* Submit Button */}
-            <div className="pt-2">
+            <div className="pt-1.5">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-[54px] rounded-xl bg-[#2878E8] hover:bg-[#1D65CE] active:bg-[#1752AA] text-white font-semibold text-[15px] flex items-center justify-center gap-2 shadow-md shadow-[#2878E8]/20 hover:shadow-lg hover:shadow-[#2878E8]/30 transition-all duration-200 disabled:opacity-65 disabled:cursor-not-allowed disabled:shadow-none cursor-pointer"
+                className="w-full h-[48px] xl:h-[52px] rounded-xl bg-[#2878E8] hover:bg-[#1D65CE] active:bg-[#1752AA] text-white font-semibold text-sm xl:text-[15px] flex items-center justify-center gap-2 shadow-md shadow-[#2878E8]/20 hover:shadow-lg hover:shadow-[#2878E8]/30 transition-all duration-200 disabled:opacity-65 disabled:cursor-not-allowed disabled:shadow-none cursor-pointer"
               >
                 {isLoading ? (
                   <>
                     <svg
-                      className="animate-spin h-5 w-5 text-white"
+                      className="animate-spin h-4 w-4 text-white"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -389,16 +388,16 @@ export function SignIn() {
           </form>
 
           {/* Security Assurance Badge */}
-          <div className="mt-8 pt-6 border-t border-[#E2E8F0] flex items-center justify-center gap-2 text-[#718096]">
-            <ShieldCheck className="w-4 h-4 text-[#2878E8]" />
-            <p className="text-xs font-normal">
+          <div className="mt-5 pt-4 border-t border-[#E2E8F0] flex items-center justify-center gap-2 text-[#718096]">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#2878E8]" />
+            <p className="text-[11px] xl:text-xs font-normal">
               Secure access to your administration portal.
             </p>
           </div>
         </div>
 
         {/* Footer / Copyright */}
-        <div className="pt-6 text-center text-xs text-[#94A3B8]">
+        <div className="pt-2 text-center text-[11px] text-[#94A3B8]">
           &copy; {new Date().getFullYear()} Another Second Chance. All rights reserved.
         </div>
       </div>
