@@ -27,6 +27,11 @@ const donorSchema = new mongoose.Schema({
         enum: ['Male', 'Female', 'Prefer Not to Say'],
         required: true,
     },
+    donorAddress: {
+        type: String,
+        default: '',
+        trim: true,
+    },
 
     preferredDonationType: {
         type: String,

@@ -347,13 +347,22 @@ const updateDonor = async (req, res) => {
     try {
         const {
             donorFullName,
+            fullName,
             donorPhoneNumber,
+            phoneNumber,
             donorGender,
+            gender,
             donorAddress,
+            address,
             preferredDonationType,
             email,
             password,
         } = req.body;
+
+        const effectiveFullName = donorFullName !== undefined ? donorFullName : fullName;
+        const effectivePhoneNumber = donorPhoneNumber !== undefined ? donorPhoneNumber : phoneNumber;
+        const effectiveGender = donorGender !== undefined ? donorGender : gender;
+        const effectiveAddress = donorAddress !== undefined ? donorAddress : address;
 
         // Find donor
         const donor = await Donor.findById(req.params.id);
@@ -373,14 +382,14 @@ const updateDonor = async (req, res) => {
         }
 
         // Validate required fields
-        if (donorFullName !== undefined && !donorFullName.trim()) {
+        if (effectiveFullName !== undefined && !effectiveFullName.trim()) {
             return res.status(400).json({
                 success: false,
                 message: 'Full name is required',
             });
         }
 
-        if (donorGender !== undefined && !['Male', 'Female', 'Prefer Not to Say'].includes(donorGender)) {
+        if (effectiveGender !== undefined && !['Male', 'Female', 'Prefer Not to Say'].includes(effectiveGender)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid gender. Must be Male, Female, or Prefer Not to Say',
@@ -455,10 +464,10 @@ const updateDonor = async (req, res) => {
         }
 
         // Update fields (only update provided fields)
-        if (donorFullName !== undefined) donor.donorFullName = donorFullName.trim();
-        if (donorPhoneNumber !== undefined) donor.donorPhoneNumber = donorPhoneNumber.trim();
-        if (donorGender !== undefined) donor.donorGender = donorGender;
-        if (donorAddress !== undefined) donor.donorAddress = donorAddress.trim();
+        if (effectiveFullName !== undefined) donor.donorFullName = effectiveFullName.trim();
+        if (effectivePhoneNumber !== undefined) donor.donorPhoneNumber = effectivePhoneNumber.trim();
+        if (effectiveGender !== undefined) donor.donorGender = effectiveGender;
+        if (effectiveAddress !== undefined) donor.donorAddress = effectiveAddress.trim();
         if (preferredDonationType !== undefined) donor.preferredDonationType = preferredDonationType || '';
 
         await donor.save();
@@ -471,10 +480,16 @@ const updateDonor = async (req, res) => {
             message: 'Donor updated successfully',
             data: {
                 id: donor._id.toString(),
+                name: donor.donorFullName,
+                fullName: donor.donorFullName,
                 donorFullName: donor.donorFullName,
                 donorEmail: donor.donorEmail || (donor.userId && donor.userId.email) || '',
+                email: donor.donorEmail || (donor.userId && donor.userId.email) || '',
+                phone: donor.donorPhoneNumber,
                 donorPhoneNumber: donor.donorPhoneNumber,
+                gender: donor.donorGender,
                 donorGender: donor.donorGender,
+                address: donor.donorAddress,
                 donorAddress: donor.donorAddress,
                 preferredDonationType: donor.preferredDonationType,
             },
