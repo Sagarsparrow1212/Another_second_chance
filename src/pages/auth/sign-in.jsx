@@ -27,9 +27,10 @@ export function SignIn() {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already authenticated
+  // Only redirect if authenticated within this specific browser tab
   useEffect(() => {
-    if (isAuthenticated) {
+    const sessionInTab = sessionStorage.getItem("auth_session");
+    if (sessionInTab && isAuthenticated) {
       navigate("/dashboard/home");
     }
   }, [isAuthenticated, navigate]);
@@ -55,7 +56,7 @@ export function SignIn() {
     setIsLoading(true);
 
     try {
-      const result = await login(email.trim(), password);
+      const result = await login(email.trim(), password, rememberMe);
 
       if (result.success) {
         if (rememberMe) {

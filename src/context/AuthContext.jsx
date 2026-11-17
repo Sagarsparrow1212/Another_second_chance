@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '@/configs/api';
+import {
+  getSessionStorageItem,
+  setSessionStorageItem,
+  removeSessionStorageItem,
+} from '@/utils/sessionStorage';
 
 const AuthContext = createContext(null);
 
@@ -14,7 +19,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkSession = () => {
       try {
-        const sessionData = localStorage.getItem('auth_session');
+        const sessionData = getSessionStorageItem('auth_session');
         if (sessionData) {
           const { user: savedUser, expiresAt } = JSON.parse(sessionData);
           
@@ -24,14 +29,14 @@ export function AuthProvider({ children }) {
             setUser(savedUser);
           } else {
             // Session expired or not admin
-            localStorage.removeItem('auth_session');
+            removeSessionStorageItem('auth_session');
             setIsAuthenticated(false);
             setUser(null);
           }
         }
       } catch (error) {
         console.error('Error checking session:', error);
-        localStorage.removeItem('auth_session');
+        removeSessionStorageItem('auth_session');
       } finally {
         setLoading(false);
       }
@@ -40,7 +45,7 @@ export function AuthProvider({ children }) {
     checkSession();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
       // Call the admin login endpoint
       const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
@@ -78,7 +83,8 @@ export function AuthProvider({ children }) {
         expiresAt: expiresAt
       };
 
-      localStorage.setItem('auth_session', JSON.stringify(sessionData));
+      // If rememberMe is checked, persist across browser tabs; otherwise, isolate to this tab (sessionStorage)
+      setSessionStorageItem('auth_session', JSON.stringify(sessionData), rememberMe);
       setIsAuthenticated(true);
       setUser(userData);
       
@@ -93,7 +99,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_session');
+    removeSessionStorageItem('auth_session');
     setIsAuthenticated(false);
     setUser(null);
     navigate('/auth/sign-in');
@@ -102,7 +108,7 @@ export function AuthProvider({ children }) {
   // Get the current auth token
   const getToken = () => {
     try {
-      const sessionData = localStorage.getItem('auth_session');
+      const sessionData = getSessionStorageItem('auth_session');
       if (sessionData) {
         const { token } = JSON.parse(sessionData);
         return token;
@@ -135,4 +141,4 @@ export function useAuth() {
 }
 
 AuthProvider.displayName = '/src/context/AuthContext.jsx';
-
+export default AuthContext;
