@@ -23,7 +23,7 @@ export const AppNavbar = ({ brandName = "Another Second Chance" }) => {
 
   return (
     <>
-      <header className="fixed top-0 right-0 left-0 xl:left-64 z-30 bg-white/95 backdrop-blur-sm border-b border-[#E7ECF2] transition-all duration-200">
+      <header className="fixed top-0 right-0 left-0 xl:left-64 z-40 bg-white/95 backdrop-blur-sm border-b border-[#E7ECF2] transition-all duration-200">
         <div className="flex items-center justify-between px-6 h-16">
           {/* Left: Mobile Toggle & Page Context */}
           <div className="flex items-center gap-4">
@@ -51,20 +51,14 @@ export const AppNavbar = ({ brandName = "Another Second Chance" }) => {
             </div>
 
             {/* Notifications Button */}
-            <div className="relative">
-              <button
-                onClick={() => setOpenNotifications(!openNotifications)}
-                className="relative p-2 rounded-lg text-enterprise-textSecondary hover:text-enterprise-textPrimary hover:bg-slate-100 transition-colors"
-                title="Notifications"
-              >
-                <Bell className="w-4.5 h-4.5 text-enterprise-textSecondary" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2878E5] rounded-full ring-2 ring-white"></span>
-              </button>
-              <NotificationPanel
-                open={openNotifications}
-                onClose={() => setOpenNotifications(false)}
-              />
-            </div>
+            <button
+              onClick={() => setOpenNotifications(!openNotifications)}
+              className="relative p-2 rounded-lg text-enterprise-textSecondary hover:text-enterprise-textPrimary hover:bg-slate-100 transition-colors"
+              title="Notifications"
+            >
+              <Bell className="w-4.5 h-4.5 text-enterprise-textSecondary" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2878E5] rounded-full ring-2 ring-white"></span>
+            </button>
 
             {/* Admin Profile Dropdown */}
             <div className="relative pl-2 border-l border-[#E7ECF2]">
@@ -118,6 +112,12 @@ export const AppNavbar = ({ brandName = "Another Second Chance" }) => {
           </div>
         </div>
       </header>
+
+      {/* Notification Panel (outside header to prevent clipping and inherit full viewport height) */}
+      <NotificationPanel
+        open={openNotifications}
+        onClose={() => setOpenNotifications(false)}
+      />
 
       <LogoutConfirmDialog
         open={showLogoutDialog}
