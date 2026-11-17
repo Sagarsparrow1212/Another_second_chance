@@ -15,6 +15,7 @@ const {
   resubmitOrganization,
   updateOrganization,
   deleteOrganization,
+  deleteOrganizationDocument,
   getOrganizationDashboard,
 } = require('../controllers/organizationController');
 
@@ -93,6 +94,11 @@ router.put('/:id', protect, authorize('organization', 'admin'), upload.fields([
   { name: 'documents', maxCount: 10 }, // Allow up to 10 documents
   { name: 'photos', maxCount: 10 } // Allow up to 10 photos
 ]), updateOrganization);
+
+// @route   DELETE /api/v1/organizations/:id/documents/:docIndex
+// @desc    Delete single verification document
+// @access  Private - Admin or Organization
+router.delete('/:id/documents/:docIndex', protect, authorize('admin', 'organization'), deleteOrganizationDocument);
 
 // @route   DELETE /api/v1/organizations/:id
 // @desc    Soft delete organization

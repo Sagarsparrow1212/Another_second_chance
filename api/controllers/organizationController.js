@@ -1076,6 +1076,77 @@ const deleteOrganization = async (req, res) => {
 };
 
 /**
+ * @desc    Delete a single verification document from an organization
+ * @route   DELETE /api/v1/organizations/:id/documents/:docIndex
+ * @access  Private (Admin or Organization)
+ */
+const deleteOrganizationDocument = async (req, res) => {
+  try {
+    const { id, docIndex } = req.params;
+    const organization = await Organization.findById(id);
+
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: 'Organization not found',
+      });
+    }
+
+    if (organization.isDeleted) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot modify a deleted organization',
+      });
+    }
+
+    const index = parseInt(docIndex, 10);
+    if (isNaN(index) || index < 0 || index >= (organization.documents || []).length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid document index',
+      });
+    }
+
+    // Target document to delete
+    const removedDoc = organization.documents[index];
+
+    // Remove from array
+    organization.documents.splice(index, 1);
+    await organization.save();
+
+    // Optionally attempt to remove file from disk
+    if (removedDoc && removedDoc.docUrl) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const filename = path.basename(removedDoc.docUrl);
+        const filePath = path.join(__dirname, '../uploads/documents', filename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (fsErr) {
+        console.warn('Could not delete physical file:', fsErr.message);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Document deleted successfully',
+      data: {
+        documents: organization.documents,
+      },
+    });
+  } catch (error) {
+    console.error('Delete organization document error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while deleting document',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+};
+
+/**
  * @desc    Register a new organization
  * @route   POST /api/v1/organizations/register
  * @access  Public
@@ -1512,6 +1583,7 @@ module.exports = {
   resubmitOrganization,
   updateOrganization,
   deleteOrganization,
+  deleteOrganizationDocument,
   getOrganizationDashboard,
 };
 

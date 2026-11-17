@@ -37,7 +37,8 @@ import {
   Receipt,
   Layers,
   FileText,
-  BadgeAlert
+  BadgeAlert,
+  Trash2,
 } from "lucide-react";
 import { API_BASE_URL_V1, API_BASE_URL, getFileUrl, getUploadUrl } from "@/configs/api";
 
@@ -95,6 +96,49 @@ export function OrganizationDetails() {
   // UI helpers
   const [copiedKey, setCopiedKey] = useState(null);
   const [homelessSearch, setHomelessSearch] = useState("");
+  const [deletingDocIndex, setDeletingDocIndex] = useState(null);
+  const [deleteDocConfirmOpen, setDeleteDocConfirmOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState(null);
+  const [deletingDocLoading, setDeletingDocLoading] = useState(false);
+
+  // Delete document handler
+  const handleDeleteDocument = async () => {
+    if (deletingDocIndex === null || !id) return;
+
+    try {
+      setDeletingDocLoading(true);
+      const sessionData = localStorage.getItem("auth_session");
+      const token = sessionData ? JSON.parse(sessionData).token : null;
+
+      const response = await fetch(`${API_BASE_URL_V1}/organizations/${id}/documents/${deletingDocIndex}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete document");
+      }
+
+      // Update state immediately
+      setOrganization((prev) => ({
+        ...prev,
+        documents: data.data?.documents || prev.documents.filter((_, idx) => idx !== deletingDocIndex),
+      }));
+
+      setDeleteDocConfirmOpen(false);
+      setDocToDelete(null);
+      setDeletingDocIndex(null);
+    } catch (err) {
+      console.error("Delete document error:", err);
+      alert(err.message || "Could not delete document. Please try again.");
+    } finally {
+      setDeletingDocLoading(false);
+    }
+  };
 
   // Copy to clipboard helper
   const copyToClipboard = (text, key) => {
@@ -1185,6 +1229,21 @@ export function OrganizationDetails() {
                                     <span>Download</span>
                                   </a>
                                 )}
+
+                                {/* Delete Document Trigger */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDeletingDocIndex(index);
+                                    setDocToDelete(doc);
+                                    setDeleteDocConfirmOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-600 transition-colors cursor-pointer"
+                                  title="Delete document"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">Delete</span>
+                                </button>
                               </div>
                             </div>
 
@@ -1758,6 +1817,68 @@ export function OrganizationDetails() {
           </div>
         </main>
       </div>
+
+      {/* Delete Document Confirmation Dialog */}
+      {deleteDocConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-[#E7ECF2]">
+            <div className="flex items-center gap-3 text-rose-600 mb-4">
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#172033]">
+                  Delete Verification Document?
+                </h3>
+                <p className="text-xs text-[#68778D]">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#475467] leading-relaxed mb-6 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              Are you sure you want to remove{" "}
+              <span className="font-semibold text-[#172033]">
+                {docToDelete?.docName || "this document"}
+              </span>{" "}
+              from this organization's official records?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={deletingDocLoading}
+                onClick={() => {
+                  setDeleteDocConfirmOpen(false);
+                  setDocToDelete(null);
+                  setDeletingDocIndex(null);
+                }}
+                className="px-4 py-2 rounded-xl border border-[#E7ECF2] bg-white text-xs font-semibold text-[#172033] hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingDocLoading}
+                onClick={handleDeleteDocument}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+              >
+                {deletingDocLoading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
