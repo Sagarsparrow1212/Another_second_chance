@@ -33,6 +33,7 @@ import {
   EditHomeless,
   JobsList,
   JobDetails,
+  Analytics,
 } from "@/pages/dashboard";
 
 import { SignIn, SignUp } from "@/pages/auth";
@@ -53,6 +54,13 @@ export const getRoutes = (isAuthenticated) => {
           name: "Dashboard",
           path: "/home",
           element: <Home />,
+        },
+        {
+          icon: <BarChart3 {...icon} />,
+          name: "Analytics",
+          path: "/analytics",
+          element: <Analytics />,
+          hidden: true,
         },
       ],
     },
