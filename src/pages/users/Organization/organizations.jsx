@@ -695,33 +695,33 @@ export function Organizations() {
           <>
             {/* Desktop / Tablet Table View (hidden on mobile < 768px) */}
             <div ref={tableContainerRef} className="hidden md:block overflow-x-auto w-full min-w-0">
-              <table className="w-full text-left border-collapse table-fixed">
+              <table className="w-full text-left border-collapse table-auto min-w-[980px]">
                 <colgroup>
-                  <col style={{ width: "22%" }} />
-                  <col style={{ width: "15%" }} />
-                  <col style={{ width: "21%" }} />
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "15%" }} />
-                  <col style={{ width: "13%" }} />
+                  <col className="w-[240px]" />
+                  <col className="w-[150px]" />
+                  <col className="w-[220px]" />
+                  <col className="w-[140px]" />
+                  <col className="w-[130px]" />
+                  <col className="w-[160px]" />
                 </colgroup>
                 <thead>
                   <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
-                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[240px]">
                       Organization
                     </th>
-                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[150px]">
                       Contact Information
                     </th>
-                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[220px]">
                       Email Address
                     </th>
-                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[140px]">
                       Verification Status
                     </th>
-                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[130px]">
                       Registration Date
                     </th>
-                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right">
+                    <th className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right w-[160px]">
                       Actions
                     </th>
                   </tr>
@@ -801,8 +801,8 @@ export function Organizations() {
                           </span>
                         </td>
 
-                        {/* 5. Registration Date (15%) */}
-                        <td className="py-3 px-4 whitespace-nowrap min-w-0">
+                        {/* 5. Registration Date */}
+                        <td className="py-3 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5 text-xs text-enterprise-muted whitespace-nowrap">
                             <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
                             <span className="whitespace-nowrap font-medium text-xs">
@@ -817,10 +817,10 @@ export function Organizations() {
                           </div>
                         </td>
 
-                        {/* 6. Actions (13%) */}
-                        <td className="py-3 px-4 text-right whitespace-nowrap min-w-0">
+                        {/* 6. Actions */}
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
                           <div
-                            className="flex items-center justify-end gap-1.5 min-w-[100px]"
+                            className="flex items-center justify-end gap-1.5 min-w-[150px]"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* Approve Button (shown only when eligible: Pending or Resubmitted) */}
