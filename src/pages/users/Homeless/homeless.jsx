@@ -508,26 +508,34 @@ export function Homeless() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto w-full min-w-0">
+              <table className="w-full text-left border-collapse table-auto min-w-[960px]">
+                <colgroup>
+                  <col className="w-[230px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[160px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[140px]" />
+                  <col className="w-[80px]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-[#F7F9FC] border-b border-[#E7ECF2]">
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[230px]">
                       Profile / Name
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[180px]">
                       Username
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[160px]">
                       Phone Number
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[180px]">
                       Organization
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted w-[140px]">
                       Registration Date
                     </th>
-                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right">
+                    <th className="py-3 px-5 text-[11px] font-bold uppercase tracking-wider text-enterprise-muted text-right w-[80px]">
                       Actions
                     </th>
                   </tr>
