@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, Bell, ChevronDown, LogOut } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { useMaterialTailwindController, setOpenSidenav } from "@/context";
 import NotificationPanel from "./NotificationPanel";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
@@ -11,6 +12,7 @@ export const AppNavbar = ({ brandName = "Another Second Chance" }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { user, logout } = useAuth();
+  const { isConnected } = useSocket();
   const [controller, dispatch] = useMaterialTailwindController();
   const { openSidenav } = controller;
   const location = useLocation();
@@ -45,9 +47,25 @@ export const AppNavbar = ({ brandName = "Another Second Chance" }) => {
           {/* Right: Status, Notifications & Profile */}
           <div className="flex items-center gap-3">
             {/* System Status indicator */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              System Live
+            <div
+              className={`hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide border transition-colors shadow-xs ${
+                isConnected
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                  : "bg-slate-50 text-slate-600 border-slate-200"
+              }`}
+              title={isConnected ? "Real-time socket connected" : "Connecting to real-time service..."}
+            >
+              <span className="relative flex h-2 w-2">
+                {isConnected && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    isConnected ? "bg-emerald-500" : "bg-slate-400"
+                  }`}
+                />
+              </span>
+              <span>{isConnected ? "System Live" : "Connecting..."}</span>
             </div>
 
             {/* Notifications Button */}
