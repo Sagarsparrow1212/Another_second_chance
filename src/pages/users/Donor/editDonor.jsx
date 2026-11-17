@@ -56,7 +56,7 @@ export function EditDonor() {
         setFetching(true);
         setError("");
 
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/donors/${id}`, {
@@ -137,7 +137,7 @@ export function EditDonor() {
     setSuccess(false);
 
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const submitData = { ...formData };

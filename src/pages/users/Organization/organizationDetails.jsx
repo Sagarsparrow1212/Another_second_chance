@@ -107,7 +107,7 @@ export function OrganizationDetails() {
 
     try {
       setDeletingDocLoading(true);
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations/${id}/documents/${deletingDocIndex}`, {
@@ -157,7 +157,7 @@ export function OrganizationDetails() {
         setLoading(true);
         setError("");
 
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/organizations/${id}`, {
@@ -199,7 +199,7 @@ export function OrganizationDetails() {
       try {
         setLoadingHomeless(true);
 
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/homeless/organization/${id}`, {
@@ -239,7 +239,7 @@ export function OrganizationDetails() {
       try {
         setLoadingDonations(true);
 
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/donations/organization/${id}?limit=100`, {

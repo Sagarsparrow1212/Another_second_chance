@@ -70,7 +70,7 @@ export function Merchants() {
   // Fetch summary stats
   const fetchStats = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/merchants?limit=1000`, {
@@ -118,7 +118,7 @@ export function Merchants() {
         queryParams.append("search", search.trim());
       }
 
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/merchants?${queryParams}`, {
@@ -219,7 +219,7 @@ export function Merchants() {
 
     try {
       setOpenMenuId(null);
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/merchants/${merchantId}`, {
@@ -241,7 +241,7 @@ export function Merchants() {
 
   const handleExport = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/merchants?limit=1000`, {

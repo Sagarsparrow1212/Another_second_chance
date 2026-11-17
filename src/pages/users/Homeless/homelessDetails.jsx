@@ -68,7 +68,7 @@ export function HomelessDetails() {
         setLoading(true);
         setError("");
 
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/homeless/${id}`, {
@@ -105,7 +105,7 @@ export function HomelessDetails() {
       if (activeTab !== "donations" || !id) return;
       try {
         setLoadingDonations(true);
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/donations/homeless/${id}?limit=100`, {

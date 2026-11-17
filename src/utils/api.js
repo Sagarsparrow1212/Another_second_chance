@@ -6,7 +6,7 @@ import { API_BASE_URL_V1 } from '@/configs/api';
  */
 export const getAuthToken = () => {
   try {
-    const sessionData = localStorage.getItem('auth_session');
+    const sessionData = (sessionStorage.getItem('auth_session') || localStorage.getItem('auth_session'));
     if (sessionData) {
       const { token } = JSON.parse(sessionData);
       return token;

@@ -20,7 +20,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Get token from localStorage
-    const sessionData = localStorage.getItem('auth_session');
+    const sessionData = (sessionStorage.getItem('auth_session') || localStorage.getItem('auth_session'));
     const token = sessionData ? JSON.parse(sessionData).token : null;
 
     if (!token) {

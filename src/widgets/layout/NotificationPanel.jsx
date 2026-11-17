@@ -17,7 +17,7 @@ const NotificationPanel = ({ open, isOpen, onClose }) => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
       if (!token) {
         setNotifications([]);
@@ -47,7 +47,7 @@ const NotificationPanel = ({ open, isOpen, onClose }) => {
 
   const markAsRead = async (id) => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
       if (!token) return;
 
@@ -69,7 +69,7 @@ const NotificationPanel = ({ open, isOpen, onClose }) => {
 
   const markAllAsRead = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
       if (!token) return;
 

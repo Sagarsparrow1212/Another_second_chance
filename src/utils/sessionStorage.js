@@ -1,37 +1,37 @@
 /**
- * Unified Session Storage Helper
- * Checks sessionStorage first (per-tab session), then falls back to localStorage
- * so users can log in as different accounts across different browser tabs if desired.
+ * Per-Tab Session Storage Helper
+ * Strictly stores and reads auth sessions from sessionStorage so that each
+ * browser tab is completely isolated and users can log into different accounts
+ * simultaneously in different tabs.
  */
 
 export const getSessionStorageItem = (key) => {
   try {
-    const sessionVal = sessionStorage.getItem(key);
-    if (sessionVal) return sessionVal;
-    return localStorage.getItem(key);
+    return sessionStorage.getItem(key);
   } catch (err) {
-    console.error(`Error reading ${key} from storage:`, err);
+    console.error(`Error reading ${key} from sessionStorage:`, err);
     return null;
   }
 };
 
-export const setSessionStorageItem = (key, value, persistInLocalStorage = false) => {
+export const setSessionStorageItem = (key, value) => {
   try {
     sessionStorage.setItem(key, value);
-    if (persistInLocalStorage) {
-      localStorage.setItem(key, value);
-    } else {
+    // Remove from localStorage to prevent cross-tab bleeding
+    try {
       localStorage.removeItem(key);
-    }
+    } catch {}
   } catch (err) {
-    console.error(`Error writing ${key} to storage:`, err);
+    console.error(`Error writing ${key} to sessionStorage:`, err);
   }
 };
 
 export const removeSessionStorageItem = (key) => {
   try {
     sessionStorage.removeItem(key);
-    localStorage.removeItem(key);
+    try {
+      localStorage.removeItem(key);
+    } catch {}
   } catch (err) {
     console.error(`Error removing ${key} from storage:`, err);
   }

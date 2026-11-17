@@ -83,8 +83,8 @@ export function AuthProvider({ children }) {
         expiresAt: expiresAt
       };
 
-      // If rememberMe is checked, persist across browser tabs; otherwise, isolate to this tab (sessionStorage)
-      setSessionStorageItem('auth_session', JSON.stringify(sessionData), rememberMe);
+      // Isolate session strictly to this browser tab
+      setSessionStorageItem('auth_session', JSON.stringify(sessionData));
       setIsAuthenticated(true);
       setUser(userData);
       

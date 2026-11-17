@@ -78,7 +78,7 @@ export function EditOrganization() {
       try {
         setFetching(true);
         setError("");
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const res = await fetch(`${API_BASE_URL_V1}/organizations/${id}`, {
@@ -247,7 +247,7 @@ export function EditOrganization() {
     setSuccess(false);
 
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const formDataToSend = new FormData();

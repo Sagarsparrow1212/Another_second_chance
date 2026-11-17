@@ -98,7 +98,7 @@ export function Organizations() {
   // Fetch summary stats across all organizations
   const fetchStats = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations?limit=1000`, {
@@ -146,7 +146,7 @@ export function Organizations() {
         queryParams.append("search", search.trim());
       }
 
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations?${queryParams}`, {
@@ -332,7 +332,7 @@ export function Organizations() {
     if (!window.confirm("Are you sure you want to approve this organization?")) return;
 
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations/${orgId}/approve`, {
@@ -374,7 +374,7 @@ export function Organizations() {
     setError("");
 
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations/${rejectingOrgId}/reject`, {
@@ -413,7 +413,7 @@ export function Organizations() {
 
     try {
       setOpenMenuId(null);
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations/${orgId}`, {
@@ -435,7 +435,7 @@ export function Organizations() {
 
   const fetchAllOrgsForExport = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/organizations?limit=1000`, {

@@ -63,7 +63,7 @@ export function JobsList() {
           params.append("search", searchQuery.trim());
         }
 
-        const sessionData = localStorage.getItem("auth_session");
+        const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
         const token = sessionData ? JSON.parse(sessionData).token : null;
 
         const response = await fetch(`${API_BASE_URL_V1}/jobs?${params.toString()}`, {
@@ -130,7 +130,7 @@ export function JobsList() {
 
     try {
       setOpenMenuId(null);
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/jobs/${jobId}`, {

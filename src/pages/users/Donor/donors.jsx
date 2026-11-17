@@ -55,7 +55,7 @@ export function Donors() {
   // Fetch summary stats
   const fetchStats = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/donors?limit=1000`, {
@@ -116,7 +116,7 @@ export function Donors() {
         queryParams.append("search", search.trim());
       }
 
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/donors?${queryParams}`, {
@@ -230,7 +230,7 @@ export function Donors() {
 
     try {
       setOpenMenuId(null);
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/donors/${donorId}`, {
@@ -252,7 +252,7 @@ export function Donors() {
 
   const handleExport = async () => {
     try {
-      const sessionData = localStorage.getItem("auth_session");
+      const sessionData = (sessionStorage.getItem("auth_session") || localStorage.getItem("auth_session"));
       const token = sessionData ? JSON.parse(sessionData).token : null;
 
       const response = await fetch(`${API_BASE_URL_V1}/donors?limit=1000`, {
