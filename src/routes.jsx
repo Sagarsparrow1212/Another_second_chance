@@ -50,7 +50,7 @@ export const getRoutes = (isAuthenticated) => {
       pages: [
         {
           icon: <LayoutDashboard {...icon} />,
-          name: "dashboard",
+          name: "Dashboard",
           path: "/home",
           element: <Home />,
         },
